@@ -3,18 +3,20 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../include/stb_image.h"
 
 float vertices[] = {
-    // positions   // colors       // tex coords
-     0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+    0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
+    0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+   -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
 
-    -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-     0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f
+   -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+   -0.5f,  0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
+    0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f
 };
 
 std::string loadFile(const std::string& path) {
@@ -43,26 +45,45 @@ GLuint compileShaderFromFile(GLenum type, const std::string& path) {
 GLuint createProgram(const std::string& vertPath, const std::string& fragPath) {
     GLuint vertexShader = compileShaderFromFile(GL_VERTEX_SHADER, vertPath);
     GLuint fragmentShader = compileShaderFromFile(GL_FRAGMENT_SHADER, fragPath);
-
     GLuint program = glCreateProgram();
     glAttachShader(program, vertexShader);
     glAttachShader(program, fragmentShader);
     glLinkProgram(program);
-
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
-
     return program;
 }
 
+// ---------- FUZZY LOGIC ------------
+int fuzzyQuality(float fps, float temp, float gpuLoad) {
+    // Membership thresholds (simple)
+    bool fpsHigh = fps >= 70;
+    bool fpsMedium = fps >= 50 && fps < 70;
+    bool fpsLow = fps < 50;
+
+    bool tempLow = temp < 60;
+    bool tempMedium = temp >= 60 && temp < 80;
+    bool tempHigh = temp >= 80;
+
+    bool loadLow = gpuLoad < 50;
+    bool loadHigh = gpuLoad >= 50;
+
+    // Rule-based fuzzy decisions
+    if (fpsHigh && tempLow && loadLow) return 0; // High quality
+    if (fpsLow || tempHigh) return 2; // Low quality
+    return 1; // Medium quality
+}
+// -----------------------------------
+
 int main() {
+    srand(time(0));
+
     if (!glfwInit()) { std::cerr << "Failed to init GLFW\n"; return -1; }
     GLFWwindow* window = glfwCreateWindow(800, 600, "Fuzzy Graphics Quality Demo", nullptr, nullptr);
     if (!window) { std::cerr << "Failed to create window\n"; glfwTerminate(); return -1; }
     glfwMakeContextCurrent(window);
     if (glewInit() != GLEW_OK) { std::cerr << "Failed to init GLEW\n"; return -1; }
 
-    // Create VAO/VBO
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -76,7 +97,6 @@ int main() {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // Load texture
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -94,34 +114,34 @@ int main() {
     } else { std::cerr << "Failed to load texture\n"; }
     stbi_image_free(data);
 
-    // Load shaders
     GLuint progHigh   = createProgram("shaders/quad.vert", "shaders/high.frag");
     GLuint progMedium = createProgram("shaders/quad.vert", "shaders/medium.frag");
     GLuint progLow    = createProgram("shaders/quad.vert", "shaders/low.frag");
 
-    GLuint currentProgram = progHigh;
+    float fps = 75.0f;
+    float temp = 55.0f;
+    float gpuLoad = 40.0f;
+    double lastUpdate = glfwGetTime();
 
-    // Keyboard input for quality change
-    glfwSetKeyCallback(window, [](GLFWwindow* win, int key, int sc, int action, int mods) {
-        if (action == GLFW_PRESS) {
-            GLuint* prog = (GLuint*)glfwGetWindowUserPointer(win);
-            if (key == GLFW_KEY_1) *prog = 0; // high
-            if (key == GLFW_KEY_2) *prog = 1; // medium
-            if (key == GLFW_KEY_3) *prog = 2; // low
-        }
-    });
-    int qualityIndex = 0;
-    glfwSetWindowUserPointer(window, &qualityIndex);
-
-    // Render loop
     while (!glfwWindowShouldClose(window)) {
+        double currentTime = glfwGetTime();
+        if (currentTime - lastUpdate >= 1.0) {
+            // Simulate changing conditions every second
+            fps = 40 + rand() % 50; // 40-89
+            temp += (rand() % 5 - 2); // +/- 2 deg
+            gpuLoad = rand() % 101; // 0-100
+            if (temp < 40) temp = 40;
+            if (temp > 90) temp = 90;
+
+            std::cout << "FPS: " << fps << " Temp: " << temp << "C Load: " << gpuLoad << "%\n";
+            lastUpdate = currentTime;
+        }
+
+        int qualityIndex = fuzzyQuality(fps, temp, gpuLoad);
+        GLuint currentProgram = (qualityIndex == 0) ? progHigh : (qualityIndex == 1) ? progMedium : progLow;
+
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        if (qualityIndex == 0) currentProgram = progHigh;
-        if (qualityIndex == 1) currentProgram = progMedium;
-        if (qualityIndex == 2) currentProgram = progLow;
-
         glUseProgram(currentProgram);
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(VAO);
