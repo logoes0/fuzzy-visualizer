@@ -1,0 +1,23 @@
+# Build outputs
+/build/
+*.o
+*.obj
+*.exe
+*.out
+*.app
+*.log
+
+# Python virtual environment
+/venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# VSCode settings (optional: keep if you want to share with team)
+.vscode/
+
+# OS-specific files
+.DS_Store
+Thumbs.db

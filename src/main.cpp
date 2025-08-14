@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <cstdio> // for popen
 #define STB_IMAGE_IMPLEMENTATION
 #include "../include/stb_image.h"
 
@@ -54,26 +55,26 @@ GLuint createProgram(const std::string& vertPath, const std::string& fragPath) {
     return program;
 }
 
-// ---------- FUZZY LOGIC ------------
-int fuzzyQuality(float fps, float temp, float gpuLoad) {
-    // Membership thresholds (simple)
-    bool fpsHigh = fps >= 70;
-    bool fpsMedium = fps >= 50 && fps < 70;
-    bool fpsLow = fps < 50;
+// Call Python fuzzy logic script
+int getQualityFromPython(float fps, float temp, float gpuLoad, float vramUsage, float motionIntensity) {
+    char command[256];
+    sprintf(command, "python3 fuzzy_module.py %.2f %.2f %.2f %.2f %.2f", 
+            fps, temp, gpuLoad, vramUsage, motionIntensity);
 
-    bool tempLow = temp < 60;
-    bool tempMedium = temp >= 60 && temp < 80;
-    bool tempHigh = temp >= 80;
+    FILE* pipe = popen(command, "r");
+    if (!pipe) {
+        std::cerr << "Failed to run Python script\n";
+        return 1; // default to medium
+    }
 
-    bool loadLow = gpuLoad < 50;
-    bool loadHigh = gpuLoad >= 50;
-
-    // Rule-based fuzzy decisions
-    if (fpsHigh && tempLow && loadLow) return 0; // High quality
-    if (fpsLow || tempHigh) return 2; // Low quality
-    return 1; // Medium quality
+    char buffer[128];
+    if (!fgets(buffer, sizeof(buffer), pipe)) {
+        pclose(pipe);
+        return 1; // default to medium
+    }
+    pclose(pipe);
+    return atoi(buffer);
 }
-// -----------------------------------
 
 int main() {
     srand(time(0));
@@ -121,23 +122,31 @@ int main() {
     float fps = 75.0f;
     float temp = 55.0f;
     float gpuLoad = 40.0f;
+    float vramUsage = 30.0f;
+    float motionIntensity = 20.0f;
     double lastUpdate = glfwGetTime();
 
     while (!glfwWindowShouldClose(window)) {
         double currentTime = glfwGetTime();
         if (currentTime - lastUpdate >= 1.0) {
             // Simulate changing conditions every second
-            fps = 40 + rand() % 50; // 40-89
-            temp += (rand() % 5 - 2); // +/- 2 deg
-            gpuLoad = rand() % 101; // 0-100
+            fps = 40 + rand() % 50;
+            temp += (rand() % 5 - 2);
+            gpuLoad = rand() % 101;
+            vramUsage = rand() % 101;
+            motionIntensity = rand() % 101;
             if (temp < 40) temp = 40;
             if (temp > 90) temp = 90;
 
-            std::cout << "FPS: " << fps << " Temp: " << temp << "C Load: " << gpuLoad << "%\n";
+            std::cout << "FPS: " << fps << " Temp: " << temp 
+                      << "C Load: " << gpuLoad 
+                      << "% VRAM: " << vramUsage 
+                      << "% Motion: " << motionIntensity << "%\n";
+
             lastUpdate = currentTime;
         }
 
-        int qualityIndex = fuzzyQuality(fps, temp, gpuLoad);
+        int qualityIndex = getQualityFromPython(fps, temp, gpuLoad, vramUsage, motionIntensity);
         GLuint currentProgram = (qualityIndex == 0) ? progHigh : (qualityIndex == 1) ? progMedium : progLow;
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
