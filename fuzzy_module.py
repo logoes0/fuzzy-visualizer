@@ -1,12 +1,8 @@
-import sys
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
-# Read parameters
-fps, temp, gpu_load, vram_usage, motion_intensity = map(float, sys.argv[1:])
-
-# Define fuzzy variables
+# Define fuzzy variables once
 fps_var = ctrl.Antecedent(np.arange(0, 120, 1), 'fps')
 temp_var = ctrl.Antecedent(np.arange(0, 101, 1), 'temp')
 gpu_load_var = ctrl.Antecedent(np.arange(0, 101, 1), 'gpu_load')
@@ -46,20 +42,19 @@ rules = [
     ctrl.Rule(motion_var['fast'] & fps_var['low'], quality_var['low'])
 ]
 
-# Control system
+# Build control system once
 system = ctrl.ControlSystem(rules)
-sim = ctrl.ControlSystemSimulation(system)
 
-# Pass inputs
-sim.input['fps'] = fps
-sim.input['temp'] = temp
-sim.input['gpu_load'] = gpu_load
-sim.input['vram_usage'] = vram_usage
-sim.input['motion_intensity'] = motion_intensity
+def compute_quality(fps, temp, gpu_load, vram_usage, motion_intensity):
+    """
+    Compute fuzzy quality score: 0 = High, 1 = Medium, 2 = Low
+    """
+    sim = ctrl.ControlSystemSimulation(system)
+    sim.input['fps'] = fps
+    sim.input['temp'] = temp
+    sim.input['gpu_load'] = gpu_load
+    sim.input['vram_usage'] = vram_usage
+    sim.input['motion_intensity'] = motion_intensity
 
-# Compute fuzzy output
-sim.compute()
-
-# Output integer quality index
-quality = int(round(sim.output['quality']))
-print(quality)
+    sim.compute()
+    return int(round(sim.output['quality']))

@@ -3,15 +3,15 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <cstdio>
+#include <Python.h> // Python embedding
 #define STB_IMAGE_IMPLEMENTATION
 #include "../include/stb_image.h"
 
-// ImGui
-#include "../vendor/imgui/imgui.h"
-#include "../vendor/imgui/backends_local/imgui_impl_glfw.h"
-#include "../vendor/imgui/backends_local/imgui_impl_opengl3.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
+// Quad vertices
 float vertices[] = {
     0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
     0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
@@ -57,42 +57,51 @@ GLuint createProgram(const std::string& vertPath, const std::string& fragPath) {
     return program;
 }
 
-int getQualityFromPython(float fps, float temp, float gpuLoad, float vramUsage, float motionIntensity) {
-    char command[256];
-    sprintf(command, "python3 fuzzy_module.py %.2f %.2f %.2f %.2f %.2f",
-            fps, temp, gpuLoad, vramUsage, motionIntensity);
+// Python embedded call
+int getQualityEmbedded(PyObject* pFunc, float fps, float temp, float gpuLoad, float vramUsage, float motionIntensity) {
+    if (!pFunc || !PyCallable_Check(pFunc)) {
+        std::cerr << "Python function not callable.\n";
+        return 1;
+    }
 
-    FILE* pipe = popen(command, "r");
-    if (!pipe) {
-        std::cerr << "Failed to run Python script\n";
-        return 1;
+    PyObject* pArgs = PyTuple_Pack(5,
+        PyFloat_FromDouble(fps),
+        PyFloat_FromDouble(temp),
+        PyFloat_FromDouble(gpuLoad),
+        PyFloat_FromDouble(vramUsage),
+        PyFloat_FromDouble(motionIntensity)
+    );
+
+    PyObject* pValue = PyObject_CallObject(pFunc, pArgs);
+    Py_DECREF(pArgs);
+
+    if (!pValue) {
+        PyErr_Print();
+        return 1; // default medium
     }
-    char buffer[128];
-    if (!fgets(buffer, sizeof(buffer), pipe)) {
-        pclose(pipe);
-        return 1;
-    }
-    pclose(pipe);
-    return atoi(buffer);
+
+    int result = (int)PyLong_AsLong(pValue);
+    Py_DECREF(pValue);
+    return result;
 }
 
 int main() {
+    // Init GLFW + OpenGL
     if (!glfwInit()) { std::cerr << "Failed to init GLFW\n"; return -1; }
     GLFWwindow* window = glfwCreateWindow(800, 600, "Fuzzy Graphics Quality Demo", nullptr, nullptr);
     if (!window) { std::cerr << "Failed to create window\n"; glfwTerminate(); return -1; }
     glfwMakeContextCurrent(window);
     if (glewInit() != GLEW_OK) { std::cerr << "Failed to init GLEW\n"; return -1; }
 
-    // Setup ImGui
+    // Init ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    (void)io;
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
-    // VAO/VBO setup
+    // OpenGL VAO/VBO
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -110,7 +119,7 @@ int main() {
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -129,35 +138,49 @@ int main() {
     GLuint progMedium = createProgram("shaders/quad.vert", "shaders/medium.frag");
     GLuint progLow    = createProgram("shaders/quad.vert", "shaders/low.frag");
 
-    // Parameters
+    // Init Python
+    Py_Initialize();
+    PyRun_SimpleString("import sys; sys.path.append('.')");  // or 'src'
+    PyObject* pName = PyUnicode_DecodeFSDefault("fuzzy_module"); // no .py
+    PyObject* pModule = PyImport_Import(pName);
+    Py_DECREF(pName);
+
+    if (!pModule) {
+        PyErr_Print();
+        std::cerr << "Failed to load fuzzy_module.py\n";
+        return -1;
+    }
+    PyObject* pFunc = PyObject_GetAttrString(pModule, "compute_quality");
+
+    // Parameters (controlled via ImGui sliders)
     float fps = 75.0f;
     float temp = 55.0f;
     float gpuLoad = 40.0f;
     float vramUsage = 30.0f;
     float motionIntensity = 20.0f;
 
+    // Main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        // Start ImGui frame
+        // ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Sliders UI
-        ImGui::Begin("Fuzzy Parameters");
+        ImGui::Begin("Graphics Parameters");
         ImGui::SliderFloat("FPS", &fps, 0.0f, 144.0f);
-        ImGui::SliderFloat("GPU Temp (C)", &temp, 30.0f, 100.0f);
-        ImGui::SliderFloat("GPU Load (%)", &gpuLoad, 0.0f, 100.0f);
-        ImGui::SliderFloat("VRAM Usage (%)", &vramUsage, 0.0f, 100.0f);
-        ImGui::SliderFloat("Motion Intensity (%)", &motionIntensity, 0.0f, 100.0f);
+        ImGui::SliderFloat("GPU Temp", &temp, 20.0f, 100.0f);
+        ImGui::SliderFloat("GPU Load %", &gpuLoad, 0.0f, 100.0f);
+        ImGui::SliderFloat("VRAM Usage %", &vramUsage, 0.0f, 100.0f);
+        ImGui::SliderFloat("Motion Intensity %", &motionIntensity, 0.0f, 100.0f);
         ImGui::End();
 
-        // Get fuzzy quality
-        int qualityIndex = getQualityFromPython(fps, temp, gpuLoad, vramUsage, motionIntensity);
+        // Call Python fuzzy logic
+        int qualityIndex = getQualityEmbedded(pFunc, fps, temp, gpuLoad, vramUsage, motionIntensity);
         GLuint currentProgram = (qualityIndex == 0) ? progHigh : (qualityIndex == 1) ? progMedium : progLow;
 
-        // Rendering
+        // Render scene
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(currentProgram);
@@ -172,15 +195,22 @@ int main() {
         glfwSwapBuffers(window);
     }
 
-    // Cleanup
+    // Cleanup Python
+    Py_XDECREF(pFunc);
+    Py_DECREF(pModule);
+    Py_Finalize();
+
+    // Cleanup ImGui + OpenGL
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(progHigh);
     glDeleteProgram(progMedium);
     glDeleteProgram(progLow);
+
     glfwTerminate();
     return 0;
 }

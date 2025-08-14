@@ -6,7 +6,11 @@ set -e
 # Create build folder if it doesn't exist
 mkdir -p build
 
-# Compile C++ program
+# Get Python include and library flags
+PY_INC=$(python3-config --includes)
+PY_LIBS=$(python3-config --ldflags --embed)
+
+# Compile C++ program with Python + ImGui + OpenGL
 echo "🔨 Compiling..."
 g++ src/main.cpp \
     vendor/imgui/imgui.cpp \
@@ -18,8 +22,10 @@ g++ src/main.cpp \
     -Iinclude \
     -Ivendor/imgui \
     -Ivendor/imgui/backends_local \
+    $PY_INC \
     -lglfw -lGLEW -lGL \
-    -o build/app
+    -o build/app \
+    $PY_LIBS
 
 # Run the executable
 echo "🚀 Running..."
