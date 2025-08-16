@@ -12,6 +12,41 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+// Simple cube for low quality (24 triangles - visible faces only)
+float simpleCubeVertices[] = {
+    // Front face (2 triangles)
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f, 0.0f,
+    
+    // Right face (2 triangles)
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+    
+    // Top face (2 triangles)
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+    
+    // Left face (2 triangles)
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f
+};
+
 // 3D Cube vertices with positions, normals, and colors
 float cubeVertices[] = {
     // positions          // normals           // colors
@@ -211,7 +246,7 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
     
-    // Create and bind VAO/VBO for cube
+    // Create and bind VAO/VBO for full cube
     GLuint cubeVAO, cubeVBO;
     glGenVertexArrays(1, &cubeVAO);
     glGenBuffers(1, &cubeVBO);
@@ -219,6 +254,25 @@ int main() {
     glBindVertexArray(cubeVAO);
     glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+    
+    // Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // Normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    // Color attribute
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    
+    // Create and bind VAO/VBO for simple cube (low quality)
+    GLuint simpleCubeVAO, simpleCubeVBO;
+    glGenVertexArrays(1, &simpleCubeVAO);
+    glGenBuffers(1, &simpleCubeVBO);
+    
+    glBindVertexArray(simpleCubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, simpleCubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(simpleCubeVertices), simpleCubeVertices, GL_STATIC_DRAW);
     
     // Position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
@@ -273,17 +327,21 @@ int main() {
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
-    // Create shader programs
-    GLuint cubeProgram = createShaderProgram("shaders/cube.vert", "shaders/cube.frag");
+    // Create shader programs for different quality levels
+    GLuint cubeSimpleProgram = createShaderProgram("shaders/cube_simple.vert", "shaders/cube_simple.frag");  // Low quality
+    GLuint cubeMediumProgram = createShaderProgram("shaders/cube_medium.vert", "shaders/cube_medium.frag");  // Medium quality
+    GLuint cubeHighProgram = createShaderProgram("shaders/cube.vert", "shaders/cube.frag");                  // High quality
     GLuint pixelateProgram = createShaderProgram("shaders/pixelate.vert", "shaders/pixelate.frag");
     
-    if (!cubeProgram || !pixelateProgram) {
+    if (!cubeSimpleProgram || !cubeMediumProgram || !cubeHighProgram || !pixelateProgram) {
         std::cerr << "Failed to create shader programs" << std::endl;
         return -1;
     }
     
     // Debug: Print shader program IDs
-    std::cout << "Cube program ID: " << cubeProgram << std::endl;
+    std::cout << "Cube Simple program ID: " << cubeSimpleProgram << std::endl;
+    std::cout << "Cube Medium program ID: " << cubeMediumProgram << std::endl;
+    std::cout << "Cube High program ID: " << cubeHighProgram << std::endl;
     std::cout << "Pixelate program ID: " << pixelateProgram << std::endl;
     
     // Initialize Python
@@ -376,26 +434,58 @@ int main() {
         
         ImGui::End();
         
-        // Set pixelation size based on quality (more pronounced differences)
+        // Performance-based quality settings
+        int renderWidth, renderHeight;
+        GLuint currentCubeProgram;
+        GLuint currentCubeVAO;
+        int triangleCount;
         float pixelSize;
+        
         if (quality == 0) {
-            pixelSize = 64.0f;   // Low quality - very pixelated (was medium)
+            // Low quality: Reduce everything
+            renderWidth = 600;   // 50% resolution
+            renderHeight = 400;
+            currentCubeProgram = cubeSimpleProgram;  // No lighting calculations
+            currentCubeVAO = simpleCubeVAO;          // 24 triangles (4 visible faces)
+            triangleCount = 24;
+            pixelSize = 32.0f;   // More pixelation
         } else if (quality == 1) {
-            pixelSize = 128.0f;  // Medium quality - moderate pixelation (was high)
+            // Medium quality: Moderate settings
+            renderWidth = 900;   // 75% resolution
+            renderHeight = 600;
+            currentCubeProgram = cubeMediumProgram;  // Basic lighting only
+            currentCubeVAO = cubeVAO;                // Full geometry
+            triangleCount = 36;
+            pixelSize = 64.0f;   // Medium pixelation
         } else {
-            pixelSize = 1000.0f; // High quality - perfectly smooth, no pixelation
+            // High quality: Full quality
+            renderWidth = 1200;  // 100% resolution
+            renderHeight = 800;
+            currentCubeProgram = cubeHighProgram;    // Full lighting
+            currentCubeVAO = cubeVAO;                // Full geometry
+            triangleCount = 36;
+            pixelSize = 200.0f;  // Minimal pixelation
         }
         
-        // Debug: Print current quality and pixel size
-        std::cout << "Quality: " << quality << ", Pixel Size: " << pixelSize;
+        // Debug: Print current settings
+        std::cout << "Quality: " << quality << " | Resolution: " << renderWidth << "x" << renderHeight 
+                  << " | Triangles: " << triangleCount << " | PixelSize: " << pixelSize;
         if (manualQuality >= 0) {
-            std::cout << " (MANUAL OVERRIDE)";
+            std::cout << " (MANUAL)";
         }
         std::cout << std::endl;
         
-        // First pass: Render cube to framebuffer
+        // Resize framebuffer texture based on quality
+        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, renderWidth, renderHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        
+        // Resize renderbuffer
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, renderWidth, renderHeight);
+        
+        // First pass: Render cube to framebuffer at quality-appropriate resolution
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glViewport(0, 0, 1200, 800);
+        glViewport(0, 0, renderWidth, renderHeight);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
@@ -406,38 +496,42 @@ int main() {
             glm::vec3(0.0f, 1.0f, 0.0f)
         );
         
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1200.0f / 800.0f, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)renderWidth / (float)renderHeight, 0.1f, 100.0f);
         
         // Model matrix with rotation
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
         
-        // Render cube with lighting to framebuffer
-        glUseProgram(cubeProgram);
+        // Render cube with quality-appropriate shader and geometry
+        glUseProgram(currentCubeProgram);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         
-        // Set uniforms
-        glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        // Set common uniforms
+        glUniformMatrix4fv(glGetUniformLocation(currentCubeProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(glGetUniformLocation(currentCubeProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(currentCubeProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         
-        // Light position and properties
-        glm::vec3 lightPos = glm::vec3(-2.0f, 3.0f, 2.0f);
-        glUniform3fv(glGetUniformLocation(cubeProgram, "lightPos"), 1, glm::value_ptr(lightPos));
-        glUniform3fv(glGetUniformLocation(cubeProgram, "viewPos"), 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, cameraDistance)));
+        // Set lighting uniforms only for medium and high quality
+        if (quality >= 1) {
+            glm::vec3 lightPos = glm::vec3(-2.0f, 3.0f, 2.0f);
+            glUniform3fv(glGetUniformLocation(currentCubeProgram, "lightPos"), 1, glm::value_ptr(lightPos));
+            glUniform3fv(glGetUniformLocation(currentCubeProgram, "lightColor"), 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
+            
+            // High quality gets additional uniforms
+            if (quality == 2) {
+                glUniform3fv(glGetUniformLocation(currentCubeProgram, "viewPos"), 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, cameraDistance)));
+                glUniform3fv(glGetUniformLocation(currentCubeProgram, "ambientColor"), 1, glm::value_ptr(glm::vec3(0.3f, 0.3f, 0.3f)));
+            }
+        }
         
-        // Use full lighting for all quality levels
-        glUniform3fv(glGetUniformLocation(cubeProgram, "lightColor"), 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
-        glUniform3fv(glGetUniformLocation(cubeProgram, "ambientColor"), 1, glm::value_ptr(glm::vec3(0.3f, 0.3f, 0.3f)));
-        
-        // Render cube to framebuffer
-        glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // Render cube with appropriate geometry
+        glBindVertexArray(currentCubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, triangleCount);
         
         // Second pass: Render fullscreen quad with pixelation shader
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, 1200, 800);
+        glViewport(0, 0, 1200, 800);  // Always render final output at full screen resolution
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         
@@ -475,12 +569,16 @@ int main() {
     
     glDeleteVertexArrays(1, &cubeVAO);
     glDeleteBuffers(1, &cubeVBO);
+    glDeleteVertexArrays(1, &simpleCubeVAO);
+    glDeleteBuffers(1, &simpleCubeVBO);
     glDeleteVertexArrays(1, &quadVAO);
     glDeleteBuffers(1, &quadVBO);
     glDeleteFramebuffers(1, &framebuffer);
     glDeleteTextures(1, &textureColorbuffer);
     glDeleteRenderbuffers(1, &rbo);
-    glDeleteProgram(cubeProgram);
+    glDeleteProgram(cubeSimpleProgram);
+    glDeleteProgram(cubeMediumProgram);
+    glDeleteProgram(cubeHighProgram);
     glDeleteProgram(pixelateProgram);
     
     ImGui_ImplOpenGL3_Shutdown();
