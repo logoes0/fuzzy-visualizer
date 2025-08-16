@@ -1,5 +1,2 @@
-numpy
-scipy
-scikit-fuzzy
-networkx
-packaging
+numpy>=1.21.0
+scikit-fuzzy>=0.4.2
