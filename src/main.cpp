@@ -275,16 +275,16 @@ int main() {
     
     // Create shader programs
     GLuint cubeProgram = createShaderProgram("shaders/cube.vert", "shaders/cube.frag");
-    GLuint postprocessProgram = createShaderProgram("shaders/screen.vert", "shaders/postprocess.frag");
+    GLuint pixelateProgram = createShaderProgram("shaders/pixelate.vert", "shaders/pixelate.frag");
     
-    if (!cubeProgram || !postprocessProgram) {
+    if (!cubeProgram || !pixelateProgram) {
         std::cerr << "Failed to create shader programs" << std::endl;
         return -1;
     }
     
     // Debug: Print shader program IDs
     std::cout << "Cube program ID: " << cubeProgram << std::endl;
-    std::cout << "Postprocess program ID: " << postprocessProgram << std::endl;
+    std::cout << "Pixelate program ID: " << pixelateProgram << std::endl;
     
     // Initialize Python
     Py_Initialize();
@@ -343,20 +343,20 @@ int main() {
         // Get quality from Python fuzzy logic
         int quality = getQualityFromPython(pFunc, fps, temp, gpuLoad, vramUsage, motionIntensity);
         
-        // Set pixelation size based on quality
+        // Set pixelation size based on quality (inverted for better visual effect)
         float pixelSize;
         if (quality == 0) {
-            pixelSize = 32.0f;  // Low quality - highly pixelated (large blocks)
+            pixelSize = 8.0f;   // Low quality - highly pixelated (large blocks)
         } else if (quality == 1) {
-            pixelSize = 16.0f;  // Medium quality - medium pixelation
+            pixelSize = 32.0f;  // Medium quality - medium pixelation
         } else {
-            pixelSize = 4.0f;   // High quality - minimal pixelation (fine edges)
+            pixelSize = 128.0f; // High quality - minimal pixelation (fine edges)
         }
         
         // Debug: Print current quality and pixel size
         std::cout << "Quality: " << quality << ", Pixel Size: " << pixelSize << std::endl;
         
-        // Render to screen with viewport-based pixelation
+        // Render cube directly to screen first (temporary for debugging)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -393,18 +393,19 @@ int main() {
         glUniform3fv(glGetUniformLocation(cubeProgram, "lightColor"), 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
         glUniform3fv(glGetUniformLocation(cubeProgram, "ambientColor"), 1, glm::value_ptr(glm::vec3(0.3f, 0.3f, 0.3f)));
         
-        // Render cube at full resolution first to test
+        // Render cube directly to screen
         glViewport(0, 0, 1200, 800);
-        
-        // Render cube
         glBindVertexArray(cubeVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         
-        // Debug: Check for OpenGL errors
+        // Debug: Check for OpenGL errors after cube render
         GLenum err;
         while ((err = glGetError()) != GL_NO_ERROR) {
             std::cerr << "OpenGL error after cube render: " << err << std::endl;
         }
+        
+        // Debug: Print that we're rendering directly
+        std::cout << "Rendering cube directly to screen (bypassing framebuffer)" << std::endl;
         
         // Render ImGui
         ImGui::Render();
@@ -426,7 +427,7 @@ int main() {
     glDeleteTextures(1, &textureColorbuffer);
     glDeleteRenderbuffers(1, &rbo);
     glDeleteProgram(cubeProgram);
-    glDeleteProgram(postprocessProgram);
+    glDeleteProgram(pixelateProgram);
     
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
