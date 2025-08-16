@@ -4,9 +4,10 @@
 mkdir -p build
 
 # Build the project
-echo "Building fuzzy 3D cube renderer..."
+echo "Building fuzzy 3D cube renderer (Modular Version)..."
 
 g++ src/main.cpp \
+    src/FuzzyCubeApp.cpp \
     vendor/imgui/imgui.cpp \
     vendor/imgui/imgui_draw.cpp \
     vendor/imgui/imgui_tables.cpp \
@@ -16,6 +17,7 @@ g++ src/main.cpp \
     -Iinclude \
     -Ivendor/imgui \
     -Ivendor/imgui/backends_local \
+    $(python3.13-config --includes) \
     -lglfw \
     -ldl \
     -lGL \
@@ -24,7 +26,7 @@ g++ src/main.cpp \
     -lXrandr \
     -lXi \
     -lGLEW \
-    $(python3.13-config --includes) \
+    -lglm \
     $(python3.13-config --ldflags) \
     -lpython3.13 \
     -o build/app
