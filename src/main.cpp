@@ -58,12 +58,19 @@ float cubeVertices[] = {
     -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.0f
 };
 
-// Wireframe indices for cube edges
-unsigned int wireframeIndices[] = {
-    0, 1, 1, 2, 2, 3, 3, 0,  // front face
-    4, 5, 5, 6, 6, 7, 7, 4,  // back face
-    0, 4, 1, 5, 2, 6, 3, 7   // connecting edges
+// Screen quad vertices for post-processing
+float screenQuadVertices[] = {
+    // positions   // texCoords
+    -1.0f,  1.0f,  0.0f, 1.0f,
+    -1.0f, -1.0f,  0.0f, 0.0f,
+     1.0f, -1.0f,  1.0f, 0.0f,
+
+    -1.0f,  1.0f,  0.0f, 1.0f,
+     1.0f, -1.0f,  1.0f, 0.0f,
+     1.0f,  1.0f,  1.0f, 1.0f
 };
+
+
 
 // Function to load shader source from file
 std::string loadShaderSource(const std::string& filePath) {
@@ -205,12 +212,12 @@ int main() {
     ImGui_ImplOpenGL3_Init("#version 330");
     
     // Create and bind VAO/VBO for cube
-    GLuint VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    GLuint cubeVAO, cubeVBO;
+    glGenVertexArrays(1, &cubeVAO);
+    glGenBuffers(1, &cubeVBO);
     
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindVertexArray(cubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
     
     // Position attribute
@@ -223,21 +230,61 @@ int main() {
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
     
-    // Create wireframe EBO
-    GLuint wireframeEBO;
-    glGenBuffers(1, &wireframeEBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, wireframeEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(wireframeIndices), wireframeIndices, GL_STATIC_DRAW);
+    // Create and bind VAO/VBO for screen quad
+    GLuint quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(screenQuadVertices), screenQuadVertices, GL_STATIC_DRAW);
+    
+    // Position attribute
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // TexCoord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    
+    // Create framebuffer for off-screen rendering
+    GLuint framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    
+    // Create color attachment texture
+    GLuint textureColorbuffer;
+    glGenTextures(1, &textureColorbuffer);
+    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1200, 800, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+    
+    // Create renderbuffer for depth and stencil
+    GLuint rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1200, 800);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+    
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Framebuffer is not complete!" << std::endl;
+        return -1;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     // Create shader programs
-    GLuint wireframeProgram = createShaderProgram("shaders/wireframe.vert", "shaders/wireframe.frag");
-    GLuint flatProgram = createShaderProgram("shaders/flat.vert", "shaders/flat.frag");
-    GLuint smoothProgram = createShaderProgram("shaders/smooth.vert", "shaders/smooth.frag");
+    GLuint cubeProgram = createShaderProgram("shaders/cube.vert", "shaders/cube.frag");
+    GLuint postprocessProgram = createShaderProgram("shaders/screen.vert", "shaders/postprocess.frag");
     
-    if (!wireframeProgram || !flatProgram || !smoothProgram) {
+    if (!cubeProgram || !postprocessProgram) {
         std::cerr << "Failed to create shader programs" << std::endl;
         return -1;
     }
+    
+    // Debug: Print shader program IDs
+    std::cout << "Cube program ID: " << cubeProgram << std::endl;
+    std::cout << "Postprocess program ID: " << postprocessProgram << std::endl;
     
     // Initialize Python
     Py_Initialize();
@@ -296,7 +343,21 @@ int main() {
         // Get quality from Python fuzzy logic
         int quality = getQualityFromPython(pFunc, fps, temp, gpuLoad, vramUsage, motionIntensity);
         
-        // Clear buffers
+        // Set pixelation size based on quality
+        float pixelSize;
+        if (quality == 0) {
+            pixelSize = 32.0f;  // Low quality - highly pixelated (large blocks)
+        } else if (quality == 1) {
+            pixelSize = 16.0f;  // Medium quality - medium pixelation
+        } else {
+            pixelSize = 4.0f;   // High quality - minimal pixelation (fine edges)
+        }
+        
+        // Debug: Print current quality and pixel size
+        std::cout << "Quality: " << quality << ", Pixel Size: " << pixelSize << std::endl;
+        
+        // Render to screen with viewport-based pixelation
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
@@ -314,58 +375,35 @@ int main() {
         model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
         
-        // Render based on quality
-        if (quality == 0) {
-            // Low quality - Wireframe mode
-            glUseProgram(wireframeProgram);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            glLineWidth(2.0f);
-            
-            // Set uniforms
-            glUniformMatrix4fv(glGetUniformLocation(wireframeProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            glUniformMatrix4fv(glGetUniformLocation(wireframeProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-            glUniformMatrix4fv(glGetUniformLocation(wireframeProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-            
-            glBindVertexArray(VAO);
-            glDrawElements(GL_LINES, sizeof(wireframeIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
-            
-        } else if (quality == 1) {
-            // Medium quality - Flat shading
-            glUseProgram(flatProgram);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            
-            // Set uniforms
-            glUniformMatrix4fv(glGetUniformLocation(flatProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            glUniformMatrix4fv(glGetUniformLocation(flatProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-            glUniformMatrix4fv(glGetUniformLocation(flatProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-            
-            // Light position (fixed above, top-left corner)
-            glm::vec3 lightPos = glm::vec3(-2.0f, 3.0f, 2.0f);
-            glUniform3fv(glGetUniformLocation(flatProgram, "lightPos"), 1, glm::value_ptr(lightPos));
-            glUniform3fv(glGetUniformLocation(flatProgram, "viewPos"), 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, cameraDistance)));
-            
-            glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            
-        } else {
-            // High quality - Smooth shading with lighting
-            glUseProgram(smoothProgram);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            
-            // Set uniforms
-            glUniformMatrix4fv(glGetUniformLocation(smoothProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            glUniformMatrix4fv(glGetUniformLocation(smoothProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-            glUniformMatrix4fv(glGetUniformLocation(smoothProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-            
-            // Light position and properties
-            glm::vec3 lightPos = glm::vec3(-2.0f, 3.0f, 2.0f);
-            glUniform3fv(glGetUniformLocation(smoothProgram, "lightPos"), 1, glm::value_ptr(lightPos));
-            glUniform3fv(glGetUniformLocation(smoothProgram, "viewPos"), 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, cameraDistance)));
-            glUniform3fv(glGetUniformLocation(smoothProgram, "lightColor"), 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
-            glUniform3fv(glGetUniformLocation(smoothProgram, "ambientColor"), 1, glm::value_ptr(glm::vec3(0.2f, 0.2f, 0.2f)));
-            
-            glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+        // Render cube with lighting
+        glUseProgram(cubeProgram);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        
+        // Set uniforms
+        glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        
+        // Light position and properties
+        glm::vec3 lightPos = glm::vec3(-2.0f, 3.0f, 2.0f);
+        glUniform3fv(glGetUniformLocation(cubeProgram, "lightPos"), 1, glm::value_ptr(lightPos));
+        glUniform3fv(glGetUniformLocation(cubeProgram, "viewPos"), 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, cameraDistance)));
+        
+        // Use full lighting for all quality levels
+        glUniform3fv(glGetUniformLocation(cubeProgram, "lightColor"), 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
+        glUniform3fv(glGetUniformLocation(cubeProgram, "ambientColor"), 1, glm::value_ptr(glm::vec3(0.3f, 0.3f, 0.3f)));
+        
+        // Render cube at full resolution first to test
+        glViewport(0, 0, 1200, 800);
+        
+        // Render cube
+        glBindVertexArray(cubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        
+        // Debug: Check for OpenGL errors
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR) {
+            std::cerr << "OpenGL error after cube render: " << err << std::endl;
         }
         
         // Render ImGui
@@ -380,12 +418,15 @@ int main() {
     Py_DECREF(pModule);
     Py_Finalize();
     
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &wireframeEBO);
-    glDeleteProgram(wireframeProgram);
-    glDeleteProgram(flatProgram);
-    glDeleteProgram(smoothProgram);
+    glDeleteVertexArrays(1, &cubeVAO);
+    glDeleteBuffers(1, &cubeVBO);
+    glDeleteVertexArrays(1, &quadVAO);
+    glDeleteBuffers(1, &quadVBO);
+    glDeleteFramebuffers(1, &framebuffer);
+    glDeleteTextures(1, &textureColorbuffer);
+    glDeleteRenderbuffers(1, &rbo);
+    glDeleteProgram(cubeProgram);
+    glDeleteProgram(postprocessProgram);
     
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

@@ -6,10 +6,10 @@ A C++ application that renders a 3D cube with dynamic quality settings based on 
 
 - **3D Cube Rendering**: Renders a textured 3D cube with proper lighting
 - **Dynamic Quality Switching**: Automatically adjusts rendering quality based on fuzzy logic
-- **Three Rendering Modes**:
-  - **Low Quality (0)**: Wireframe rendering for maximum performance
-  - **Medium Quality (1)**: Flat shading with basic lighting
-  - **High Quality (2)**: Smooth shading with advanced lighting and specular highlights
+- **Three Quality Levels**:
+  - **Low Quality (0)**: Highly pixelated cube (16x16 pixel blocks)
+  - **Medium Quality (1)**: Medium pixelation (8x8 pixel blocks)
+  - **High Quality (2)**: Smooth cube (no pixelation, full resolution)
 - **Interactive Controls**: ImGui interface for adjusting fuzzy logic parameters
 - **Python Integration**: Uses Python C API to call fuzzy logic module
 - **Real-time Performance**: GLFW + OpenGL for smooth real-time rendering
@@ -18,7 +18,7 @@ A C++ application that renders a 3D cube with dynamic quality settings based on 
 
 - **Frontend**: GLFW + OpenGL + ImGui
 - **Backend**: Python fuzzy logic module using scikit-fuzzy
-- **Rendering Pipeline**: Three shader programs for different quality levels
+- **Rendering Pipeline**: Single cube shader with post-processing pixelation effects
 - **Performance Metrics**: FPS, GPU temperature, GPU load, VRAM usage, motion intensity
 
 ## Dependencies
@@ -40,12 +40,10 @@ fuzzy-visualizer/
 ├── src/
 │   └── main.cpp              # Main C++ application
 ├── shaders/
-│   ├── wireframe.vert        # Wireframe vertex shader
-│   ├── wireframe.frag        # Wireframe fragment shader
-│   ├── flat.vert            # Flat shading vertex shader
-│   ├── flat.frag            # Flat shading fragment shader
-│   ├── smooth.vert          # Smooth shading vertex shader
-│   └── smooth.frag          # Smooth shading fragment shader
+│   ├── cube.vert            # Cube vertex shader with lighting
+│   ├── cube.frag            # Cube fragment shader with lighting
+│   ├── screen.vert          # Screen quad vertex shader
+│   └── postprocess.frag     # Post-processing pixelation shader
 ├── vendor/
 │   ├── glad/                 # GLAD OpenGL loader
 │   └── imgui/                # ImGui library
@@ -120,9 +118,8 @@ The Python module implements the following fuzzy logic rules:
 ## Technical Details
 
 ### Shader Programs
-- **Wireframe**: Simple vertex/fragment shaders for line rendering
-- **Flat**: Basic lighting with ambient and diffuse components
-- **Smooth**: Advanced lighting with ambient, diffuse, specular, and attenuation
+- **Cube**: Vertex and fragment shaders for 3D cube rendering with full lighting
+- **Post-Processing**: Fragment shader that applies pixelation effects based on quality level
 
 ### OpenGL Features
 - Vertex Buffer Objects (VBO)
@@ -170,9 +167,9 @@ The application provides detailed error messages for:
 
 ## Performance Considerations
 
-- **Wireframe mode**: Minimal GPU usage, suitable for low-end systems
-- **Flat shading**: Moderate GPU usage, balanced performance/quality
-- **Smooth shading**: Higher GPU usage, best visual quality
+- **Low quality (pixelated)**: Reduced GPU usage through post-processing effects
+- **Medium quality**: Balanced performance and visual quality
+- **High quality (smooth)**: Full GPU usage for best visual quality
 - **Real-time switching**: Fuzzy logic updates every frame for responsive quality changes
 
 ## Contributing
