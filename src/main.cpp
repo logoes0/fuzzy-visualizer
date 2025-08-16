@@ -338,23 +338,60 @@ int main() {
         ImGui::SliderFloat("Camera Distance", &cameraDistance, 2.0f, 10.0f);
         ImGui::SliderFloat("Rotation X", &rotationX, -180.0f, 180.0f);
         ImGui::SliderFloat("Rotation Y", &rotationY, -180.0f, 180.0f);
-        ImGui::End();
         
         // Get quality from Python fuzzy logic
         int quality = getQualityFromPython(pFunc, fps, temp, gpuLoad, vramUsage, motionIntensity);
         
-        // Set pixelation size based on quality (adjusted for better visual clarity)
+        // Manual quality override with keyboard input (1=low, 2=medium, 3=high)
+        static int manualQuality = -1; // -1 means use fuzzy logic
+        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+            manualQuality = 0; // Low quality
+        } else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+            manualQuality = 1; // Medium quality
+        } else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+            manualQuality = 2; // High quality
+        } else if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
+            manualQuality = -1; // Reset to automatic fuzzy logic
+        }
+        
+        // Use manual override if set, otherwise use fuzzy logic
+        if (manualQuality >= 0) {
+            quality = manualQuality;
+        }
+        
+        ImGui::Separator();
+        ImGui::Text("Quality Control:");
+        ImGui::Text("Press 1=Low, 2=Medium, 3=High, 0=Auto");
+        
+        // Show current quality mode
+        const char* qualityNames[] = {"Low", "Medium", "High"};
+        ImGui::Text("Current Quality: %s", qualityNames[quality]);
+        if (manualQuality >= 0) {
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "(MANUAL)");
+        } else {
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "(AUTO)");
+        }
+        
+        ImGui::End();
+        
+        // Set pixelation size based on quality (more pronounced differences)
         float pixelSize;
         if (quality == 0) {
-            pixelSize = 32.0f;  // Low quality - noticeable pixelation but cube shape preserved
+            pixelSize = 64.0f;   // Low quality - very pixelated (was medium)
         } else if (quality == 1) {
-            pixelSize = 64.0f;  // Medium quality - moderate pixelation
+            pixelSize = 128.0f;  // Medium quality - moderate pixelation (was high)
         } else {
-            pixelSize = 128.0f; // High quality - minimal pixelation (smooth edges)
+            pixelSize = 1000.0f; // High quality - perfectly smooth, no pixelation
         }
         
         // Debug: Print current quality and pixel size
-        std::cout << "Quality: " << quality << ", Pixel Size: " << pixelSize << std::endl;
+        std::cout << "Quality: " << quality << ", Pixel Size: " << pixelSize;
+        if (manualQuality >= 0) {
+            std::cout << " (MANUAL OVERRIDE)";
+        }
+        std::cout << std::endl;
         
         // First pass: Render cube to framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
