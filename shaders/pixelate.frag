@@ -9,8 +9,8 @@ out vec4 FragColor;
 void main()
 {
     // Snap UVs to pixel grid to create pixelation effect
-    vec2 texSize = textureSize(screenTexture, 0);
-    vec2 pixelatedCoord = floor(TexCoord * texSize / pixelSize) * pixelSize / texSize;
+    // Using the simplified formula: floor(TexCoord * pixelSize) / pixelSize
+    vec2 pixelatedCoord = floor(TexCoord * pixelSize) / pixelSize;
     
     // Sample the texture at the pixelated coordinates
     FragColor = texture(screenTexture, pixelatedCoord);

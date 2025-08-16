@@ -343,21 +343,22 @@ int main() {
         // Get quality from Python fuzzy logic
         int quality = getQualityFromPython(pFunc, fps, temp, gpuLoad, vramUsage, motionIntensity);
         
-        // Set pixelation size based on quality (inverted for better visual effect)
+        // Set pixelation size based on quality (adjusted for better visual clarity)
         float pixelSize;
         if (quality == 0) {
-            pixelSize = 8.0f;   // Low quality - highly pixelated (large blocks)
+            pixelSize = 32.0f;  // Low quality - noticeable pixelation but cube shape preserved
         } else if (quality == 1) {
-            pixelSize = 32.0f;  // Medium quality - medium pixelation
+            pixelSize = 64.0f;  // Medium quality - moderate pixelation
         } else {
-            pixelSize = 128.0f; // High quality - minimal pixelation (fine edges)
+            pixelSize = 128.0f; // High quality - minimal pixelation (smooth edges)
         }
         
         // Debug: Print current quality and pixel size
         std::cout << "Quality: " << quality << ", Pixel Size: " << pixelSize << std::endl;
         
-        // Render cube directly to screen first (temporary for debugging)
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // First pass: Render cube to framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glViewport(0, 0, 1200, 800);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
@@ -375,7 +376,7 @@ int main() {
         model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
         
-        // Render cube with lighting
+        // Render cube with lighting to framebuffer
         glUseProgram(cubeProgram);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         
@@ -393,19 +394,35 @@ int main() {
         glUniform3fv(glGetUniformLocation(cubeProgram, "lightColor"), 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
         glUniform3fv(glGetUniformLocation(cubeProgram, "ambientColor"), 1, glm::value_ptr(glm::vec3(0.3f, 0.3f, 0.3f)));
         
-        // Render cube directly to screen
-        glViewport(0, 0, 1200, 800);
+        // Render cube to framebuffer
         glBindVertexArray(cubeVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         
-        // Debug: Check for OpenGL errors after cube render
-        GLenum err;
-        while ((err = glGetError()) != GL_NO_ERROR) {
-            std::cerr << "OpenGL error after cube render: " << err << std::endl;
-        }
+        // Second pass: Render fullscreen quad with pixelation shader
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, 1200, 800);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
         
-        // Debug: Print that we're rendering directly
-        std::cout << "Rendering cube directly to screen (bypassing framebuffer)" << std::endl;
+        // Disable depth testing for quad rendering
+        glDisable(GL_DEPTH_TEST);
+        
+        glUseProgram(pixelateProgram);
+        
+        // Bind the framebuffer texture
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+        glUniform1i(glGetUniformLocation(pixelateProgram, "screenTexture"), 0);
+        
+        // Set pixelation uniform
+        glUniform1f(glGetUniformLocation(pixelateProgram, "pixelSize"), pixelSize);
+        
+        // Render fullscreen quad
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        
+        // Re-enable depth testing
+        glEnable(GL_DEPTH_TEST);
         
         // Render ImGui
         ImGui::Render();
