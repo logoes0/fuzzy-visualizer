@@ -1,17 +1,11 @@
 #!/bin/bash
 
-# Exit if any command fails
-set -e
-
-# Create build folder if it doesn't exist
+# Create build directory if it doesn't exist
 mkdir -p build
 
-# Get Python include and library flags
-PY_INC=$(python3-config --includes)
-PY_LIBS=$(python3-config --ldflags --embed)
+# Build the project
+echo "Building fuzzy 3D cube renderer..."
 
-# Compile C++ program with Python + ImGui + OpenGL
-echo "🔨 Compiling..."
 g++ src/main.cpp \
     vendor/imgui/imgui.cpp \
     vendor/imgui/imgui_draw.cpp \
@@ -22,11 +16,37 @@ g++ src/main.cpp \
     -Iinclude \
     -Ivendor/imgui \
     -Ivendor/imgui/backends_local \
-    $PY_INC \
-    -lglfw -lGLEW -lGL \
-    -o build/app \
-    $PY_LIBS
+    -lglfw \
+    -ldl \
+    -lGL \
+    -lX11 \
+    -lpthread \
+    -lXrandr \
+    -lXi \
+    -lGLEW \
+    $(python3.13-config --includes) \
+    $(python3.13-config --ldflags) \
+    -lpython3.13 \
+    -o build/app
 
-# Run the executable
-echo "🚀 Running..."
-./build/app
+if [ $? -eq 0 ]; then
+    echo "Build successful! Running application..."
+    echo "Note: Make sure you have the required dependencies installed:"
+    echo "  - GLFW development libraries"
+    echo "  - OpenGL development libraries"
+    echo "  - X11 development libraries"
+    echo "  - Python 3.13 development headers"
+    echo "  - GLM (OpenGL Mathematics) headers"
+    echo ""
+    echo "On Arch Linux, you can install them with:"
+    echo "  sudo pacman -S glfw-x11 glfw-wayland mesa libx11 libxrandr libxi python"
+    echo ""
+    echo "For GLM (if not available in system packages):"
+    echo "  sudo pacman -S glm"
+    echo ""
+    echo "Starting application..."
+    ./build/app
+else
+    echo "Build failed!"
+    exit 1
+fi
