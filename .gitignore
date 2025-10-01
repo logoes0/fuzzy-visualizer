@@ -29,3 +29,5 @@ vendor/
 
 # Runtime generated configuration
 imgui.ini
+
+.envrc
