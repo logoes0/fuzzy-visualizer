@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e  # Exit on error
 
 # Create build directory if it doesn't exist
 mkdir -p build
@@ -17,7 +18,7 @@ g++ src/main.cpp \
     -Iinclude \
     -Ivendor/imgui \
     -Ivendor/imgui/backends_local \
-    $(python3.13-config --includes) \
+    $(python3-config --includes) \
     -lglfw \
     -ldl \
     -lGL \
@@ -26,29 +27,69 @@ g++ src/main.cpp \
     -lXrandr \
     -lXi \
     -lGLEW \
-    -lglm \
-    $(python3.13-config --ldflags) \
-    -lpython3.13 \
+    $(pkg-config --cflags --libs glm) \
+    $(python3-config --ldflags --embed) \
     -o build/app
 
-if [ $? -eq 0 ]; then
-    echo "Build successful! Running application..."
-    echo "Note: Make sure you have the required dependencies installed:"
-    echo "  - GLFW development libraries"
-    echo "  - OpenGL development libraries"
-    echo "  - X11 development libraries"
-    echo "  - Python 3.13 development headers"
-    echo "  - GLM (OpenGL Mathematics) headers"
-    echo ""
-    echo "On Arch Linux, you can install them with:"
-    echo "  sudo pacman -S glfw-x11 glfw-wayland mesa libx11 libxrandr libxi python"
-    echo ""
-    echo "For GLM (if not available in system packages):"
-    echo "  sudo pacman -S glm"
-    echo ""
-    echo "Starting application..."
-    ./build/app
-else
-    echo "Build failed!"
-    exit 1
-fi
+echo "✅ Build successful!"
+echo ""
+echo "Starting application..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+./build/app
+
+
+
+# #!/bin/bash
+
+# # Create build directory if it doesn't exist
+# mkdir -p build
+
+# # Build the project
+# echo "Building fuzzy 3D cube renderer (Modular Version)..."
+
+# g++ src/main.cpp \
+#     src/FuzzyCubeApp.cpp \
+#     vendor/imgui/imgui.cpp \
+#     vendor/imgui/imgui_draw.cpp \
+#     vendor/imgui/imgui_tables.cpp \
+#     vendor/imgui/imgui_widgets.cpp \
+#     vendor/imgui/backends_local/imgui_impl_glfw.cpp \
+#     vendor/imgui/backends_local/imgui_impl_opengl3.cpp \
+#     -Iinclude \
+#     -Ivendor/imgui \
+#     -Ivendor/imgui/backends_local \
+#     $(python3.13-config --includes) \
+#     -lglfw \
+#     -ldl \
+#     -lGL \
+#     -lX11 \
+#     -lpthread \
+#     -lXrandr \
+#     -lXi \
+#     -lGLEW \
+#     -lglm \
+#     $(python3.13-config --ldflags) \
+#     -lpython3.13 \
+#     -o build/app
+
+# if [ $? -eq 0 ]; then
+#     echo "Build successful! Running application..."
+#     echo "Note: Make sure you have the required dependencies installed:"
+#     echo "  - GLFW development libraries"
+#     echo "  - OpenGL development libraries"
+#     echo "  - X11 development libraries"
+#     echo "  - Python 3.13 development headers"
+#     echo "  - GLM (OpenGL Mathematics) headers"
+#     echo ""
+#     echo "On Arch Linux, you can install them with:"
+#     echo "  sudo pacman -S glfw-x11 glfw-wayland mesa libx11 libxrandr libxi python"
+#     echo ""
+#     echo "For GLM (if not available in system packages):"
+#     echo "  sudo pacman -S glm"
+#     echo ""
+#     echo "Starting application..."
+#     ./build/app
+# else
+#     echo "Build failed!"
+#     exit 1
+# fi

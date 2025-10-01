@@ -23,3 +23,9 @@ __pycache__/
 Thumbs.db
 
 build/app
+
+# External dependencies (vendored code)
+vendor/
+
+# Runtime generated configuration
+imgui.ini
