@@ -1,4 +1,4 @@
-# Fuzzy 3D Cube Renderer
+# Fuzzy 3D Cube Quality Renderer
 
 A C++ application that renders a 3D cube with dynamic quality settings
 based on fuzzy logic. The renderer automatically switches between
@@ -57,12 +57,15 @@ manually.
 
 ## Project Structure
 
-fuzzy-visualizer/ ├── src/ \# C++ source code (.cpp) ├── include/ \# C++
-header files (.h) ├── shaders/ \# GLSL shader files ├── vendor/ \#
-Third-party libraries (e.g., ImGui) ├── fuzzy_module.py \# Python fuzzy
-logic module ├── shell.nix \# Nix environment definition ├── run.sh \#
-Build and run script └── requirements.txt \# Python dependencies for
-manual setup
+fuzzy-visualizer/
+├── src/              # C++ source code (.cpp)
+├── include/          # C++ header files (.h)
+├── shaders/          # GLSL shader files
+├── vendor/           # Third-party libraries (e.g., ImGui)
+├── fuzzy_module.py   # Python fuzzy logic module
+├── shell.nix         # Nix environment definition
+├── run.sh            # Build and run script
+└── requirements.txt  # Python dependencies for manual setup
 
 ## Troubleshooting
 
