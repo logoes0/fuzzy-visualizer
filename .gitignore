@@ -1,4 +1,9 @@
-# Build outputs
+##############################################
+# BUILD & OUTPUT DIRECTORIES
+##############################################
+
+build/
+build/*
 /build/
 *.o
 *.obj
@@ -7,27 +12,57 @@
 *.app
 *.log
 
-# Python virtual environment
-/venv/
+##############################################
+# PYTHON ENVIRONMENT & ARTIFACTS
+##############################################
 
-# Python cache files
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache / temp files
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+*.pytest_cache/
+*.coverage
+*.egg-info/
 
-# VSCode settings (optional: keep if you want to share with team)
+##############################################
+# C++ / OPENGL / IMGUI GENERATED FILES
+##############################################
+
+# ImGui saved state
+imgui.ini
+
+##############################################
+# VENDORED / EXTERNAL LIBRARIES
+##############################################
+
+vendor/
+
+##############################################
+# PROJECT + USER SETTINGS
+##############################################
+
+# VSCode (optional — delete if you want to share settings)
 .vscode/
 
-# OS-specific files
+# OS-specific cruft
 .DS_Store
 Thumbs.db
 
-build/app
-
-# External dependencies (vendored code)
-vendor/
-
-# Runtime generated configuration
-imgui.ini
-
+# Shell environment files (Nix / direnv)
 .envrc
+.direnv/
+
+##############################################
+# OTHER MISC / TEMP FILES
+##############################################
+
+*.swp
+*.tmp
+*.bak
