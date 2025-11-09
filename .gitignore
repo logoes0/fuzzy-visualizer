@@ -66,3 +66,23 @@ Thumbs.db
 *.swp
 *.tmp
 *.bak
+
+##############################################
+# GENERATED DOCUMENTATION & DIAGNOSTICS
+##############################################
+
+# Generated graphics documentation (can be recreated)
+diagnostics/
+DOSSIER_INDEX.md
+DELIVERABLES_SUMMARY.md
+
+# Generated patches (optional improvements documentation)
+patches/
+
+# Note: scripts/ is NOT ignored - it contains useful tools
+# If you want to ignore generated diagnostic outputs only:
+# diagnostics/*.txt
+# diagnostics/*.json
+# but keep the main dossier, comment out "diagnostics/" above
+
+scripts/
