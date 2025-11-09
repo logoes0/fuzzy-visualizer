@@ -213,14 +213,21 @@ void FramebufferManager::cleanup() {
 
 // CubeRenderer implementation
 bool CubeRenderer::initialize() {
+    std::cout << "[DEBUG CubeRenderer] Starting cube renderer initialization..." << std::endl;
+    
     // Create and bind VAO/VBO for full cube
+    std::cout << "[DEBUG CubeRenderer] Creating full cube VAO/VBO..." << std::endl;
     glGenVertexArrays(1, &cubeVAO);
     glGenBuffers(1, &cubeVBO);
     
+    std::cout << "[DEBUG CubeRenderer] Binding full cube..." << std::endl;
     glBindVertexArray(cubeVAO);
     glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    
+    std::cout << "[DEBUG CubeRenderer] Uploading full cube data (size: " << sizeof(CubeData::cubeVertices) << ")..." << std::endl;
     glBufferData(GL_ARRAY_BUFFER, sizeof(CubeData::cubeVertices), CubeData::cubeVertices, GL_STATIC_DRAW);
     
+    std::cout << "[DEBUG CubeRenderer] Setting up full cube attributes..." << std::endl;
     // Position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -232,13 +239,18 @@ bool CubeRenderer::initialize() {
     glEnableVertexAttribArray(2);
     
     // Create and bind VAO/VBO for simple cube (low quality)
+    std::cout << "[DEBUG CubeRenderer] Creating simple cube VAO/VBO..." << std::endl;
     glGenVertexArrays(1, &simpleCubeVAO);
     glGenBuffers(1, &simpleCubeVBO);
     
+    std::cout << "[DEBUG CubeRenderer] Binding simple cube..." << std::endl;
     glBindVertexArray(simpleCubeVAO);
     glBindBuffer(GL_ARRAY_BUFFER, simpleCubeVBO);
+    
+    std::cout << "[DEBUG CubeRenderer] Uploading simple cube data (size: " << sizeof(CubeData::simpleCubeVertices) << ")..." << std::endl;
     glBufferData(GL_ARRAY_BUFFER, sizeof(CubeData::simpleCubeVertices), CubeData::simpleCubeVertices, GL_STATIC_DRAW);
     
+    std::cout << "[DEBUG CubeRenderer] Setting up simple cube attributes..." << std::endl;
     // Position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -250,19 +262,26 @@ bool CubeRenderer::initialize() {
     glEnableVertexAttribArray(2);
     
     // Create and bind VAO/VBO for screen quad
+    std::cout << "[DEBUG CubeRenderer] Creating screen quad VAO/VBO..." << std::endl;
     glGenVertexArrays(1, &quadVAO);
     glGenBuffers(1, &quadVBO);
     
+    std::cout << "[DEBUG CubeRenderer] Binding screen quad..." << std::endl;
     glBindVertexArray(quadVAO);
     glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    
+    std::cout << "[DEBUG CubeRenderer] Uploading screen quad data (size: " << sizeof(CubeData::screenQuadVertices) << ")..." << std::endl;
     glBufferData(GL_ARRAY_BUFFER, sizeof(CubeData::screenQuadVertices), CubeData::screenQuadVertices, GL_STATIC_DRAW);
     
+    std::cout << "[DEBUG CubeRenderer] Setting up screen quad attributes..." << std::endl;
     // Position attribute
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     // TexCoord attribute
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    
+    std::cout << "[DEBUG CubeRenderer] Cube renderer initialization complete!" << std::endl;
     
     return true;
 }
@@ -346,25 +365,77 @@ void ImGuiManager::shutdown() {
 
 // PythonManager implementation
 bool PythonManager::initialize() {
-    Py_Initialize();
-    PyRun_SimpleString("import sys; sys.path.append('.')");
+    std::cout << "[DEBUG] Starting Python initialization..." << std::endl;
     
+    // Check if Python is already initialized
+    if (Py_IsInitialized()) {
+        std::cerr << "Python is already initialized" << std::endl;
+        return false;
+    }
+    
+    std::cout << "[DEBUG] Calling Py_InitializeEx(0)..." << std::endl;
+    // Initialize Python (use Py_InitializeEx(0) to avoid signal handler issues)
+    // Don't set PYTHONHOME programmatically - let environment handle it
+    Py_InitializeEx(0);
+    
+    if (!Py_IsInitialized()) {
+        std::cerr << "Failed to initialize Python" << std::endl;
+        return false;
+    }
+    
+    std::cout << "[DEBUG] Python initialized successfully" << std::endl;
+    std::cout << "[DEBUG] Setting up Python paths..." << std::endl;
+    
+    // Add current directory to Python path and ensure venv site-packages are accessible
+    PyRun_SimpleString(
+        "import sys\n"
+        "import os\n"
+        "sys.path.insert(0, '.')\n"
+        "# Add venv site-packages if in venv\n"
+        "if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):\n"
+        "    venv_site_packages = os.path.join(sys.prefix, 'lib', 'python' + '.'.join(map(str, sys.version_info[:2])), 'site-packages')\n"
+        "    if os.path.exists(venv_site_packages):\n"
+        "        sys.path.insert(0, venv_site_packages)\n"
+    );
+    
+    std::cout << "[DEBUG] Paths configured" << std::endl;
+    std::cout << "[DEBUG] Importing fuzzy_module..." << std::endl;
+    
+    // Import the fuzzy module
     PyObject* pName = PyUnicode_DecodeFSDefault("fuzzy_module");
+    if (!pName) {
+        PyErr_Print();
+        std::cerr << "Failed to create module name" << std::endl;
+        return false;
+    }
+    
+    std::cout << "[DEBUG] Starting module import (this may take a few seconds)..." << std::endl;
     pModule = PyImport_Import(pName);
     Py_DECREF(pName);
     
     if (!pModule) {
         PyErr_Print();
         std::cerr << "Failed to load fuzzy_module.py" << std::endl;
+        std::cerr << "Make sure fuzzy_module.py is in the current directory" << std::endl;
+        std::cerr << "Current working directory: ";
+        PyRun_SimpleString("import os; print(os.getcwd())");
         return false;
     }
     
+    std::cout << "[DEBUG] Module imported successfully" << std::endl;
+    std::cout << "[DEBUG] Getting compute_quality function..." << std::endl;
+    
+    // Get the compute_quality function
     pFunc = PyObject_GetAttrString(pModule, "compute_quality");
     if (!pFunc || !PyCallable_Check(pFunc)) {
+        PyErr_Print();
         std::cerr << "Failed to load compute_quality function" << std::endl;
+        Py_XDECREF(pModule);
+        pModule = nullptr;
         return false;
     }
     
+    std::cout << "[DEBUG] Python initialization complete!" << std::endl;
     return true;
 }
 
@@ -437,7 +508,19 @@ QualitySettings QualitySettings::getSettings(int quality, GLuint simpleProgram, 
 
 // FuzzyCubeApp implementation
 bool FuzzyCubeApp::initialize() {
+    std::cout << "[DEBUG] Starting application initialization..." << std::endl;
+    
+    // Initialize Python FIRST, before any OpenGL/threading initialization
+    // This avoids conflicts between Python's threading and OpenGL's threading
+    std::cout << "[DEBUG] Initializing Python (before OpenGL)..." << std::endl;
+    if (!pythonManager.initialize()) {
+        std::cerr << "Failed to initialize Python" << std::endl;
+        return false;
+    }
+    std::cout << "[DEBUG] Python initialized successfully" << std::endl;
+    
     // Initialize GLFW
+    std::cout << "[DEBUG] Initializing GLFW..." << std::endl;
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
@@ -449,6 +532,7 @@ bool FuzzyCubeApp::initialize() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
     // Create window
+    std::cout << "[DEBUG] Creating window..." << std::endl;
     window = glfwCreateWindow(1200, 800, "Fuzzy 3D Cube Renderer", nullptr, nullptr);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
@@ -456,13 +540,21 @@ bool FuzzyCubeApp::initialize() {
         return false;
     }
     
+    // CRITICAL: Make context current BEFORE initializing GLEW
+    std::cout << "[DEBUG] Making OpenGL context current..." << std::endl;
     glfwMakeContextCurrent(window);
     
-    // Initialize GLEW
-    if (glewInit() != GLEW_OK) {
-        std::cerr << "Failed to initialize GLEW" << std::endl;
+    // Initialize GLEW with experimental features
+    std::cout << "[DEBUG] Initializing GLEW..." << std::endl;
+    glewExperimental = GL_TRUE;  // Enable modern OpenGL features
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(err) << std::endl;
         return false;
     }
+    
+    // Clear any OpenGL error that glewInit might have caused (known issue)
+    glGetError();
     
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
     
@@ -471,10 +563,12 @@ bool FuzzyCubeApp::initialize() {
     glViewport(0, 0, 1200, 800);
     
     // Initialize components
+    std::cout << "[DEBUG] Initializing ImGui..." << std::endl;
     if (!ImGuiManager::initialize(window)) return false;
+    std::cout << "[DEBUG] Initializing cube renderer..." << std::endl;
     if (!cubeRenderer.initialize()) return false;
+    std::cout << "[DEBUG] Initializing framebuffer..." << std::endl;
     if (!framebufferManager.initialize(1200, 800)) return false;
-    if (!pythonManager.initialize()) return false;
     
     // Create shader programs
     cubeSimpleProgram = ShaderManager::createShaderProgram("shaders/cube_simple.vert", "shaders/cube_simple.frag");

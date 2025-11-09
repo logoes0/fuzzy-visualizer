@@ -2,28 +2,18 @@
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
-    # Python with pip for installing packages
-    python311
-    python311Packages.pip
-    python311Packages.virtualenv
-    python311Packages.packaging
-
+    # Python 3.13 (matching your venv)
+    python313
+    python313Packages.pip
+    python313Packages.virtualenv
+    python313Packages.packaging
+    
     # Core Python packages (pre-installed from Nix)
-    python311Packages.numpy
-    python311Packages.scipy
-    python311Packages.networkx
-
-    # Add extra Python packages (non-destructive): provide common ML / data / plotting libs
-    # We use python311.withPackages to avoid depending on exact attribute names in older/newer nixpkgs.
-    (python311.withPackages (ps: with ps; [
-      scikit_learn
-      scikit_image
-      seaborn
-      pandas
-      jupyterlab
-      pillow
-    ]))
-
+    python313Packages.numpy
+    python313Packages.scipy
+    python313Packages.networkx
+    python313Packages.scikit-learn
+    
     # Graphics/OpenGL libraries (project-specific)
     glfw
     glew
@@ -31,181 +21,79 @@ pkgs.mkShell {
     libGL
     libGLU
     glm
-    wayland
+    wayland    
     # X11 libraries (project-specific)
     xorg.libX11
     xorg.libXrandr
     xorg.libXi
     xorg.libXcursor
     xorg.libXinerama
-
+    
     # Build tool for pkg-config
     pkg-config
   ];
-
+  
   # Set up environment variables for OpenGL and graphics libraries
   shellHook = ''
     echo "🚀 OpenGL Python/C++ Development Environment"
     echo "Python: $(python --version)"
     echo "GCC: $(gcc --version | head -n1)"
     echo ""
-
+    
+    # Remove old virtual environment if it exists with wrong Python version
+    if [ -d .venv ]; then
+      VENV_PYTHON_VERSION=$(.venv/bin/python --version 2>&1 | grep -oP '\d+\.\d+' || echo "unknown")
+      NIX_PYTHON_VERSION=$(python --version 2>&1 | grep -oP '\d+\.\d+')
+      
+      if [ "$VENV_PYTHON_VERSION" != "$NIX_PYTHON_VERSION" ]; then
+        echo "⚠️  Virtual environment Python version mismatch detected"
+        echo "   venv: Python $VENV_PYTHON_VERSION"
+        echo "   nix:  Python $NIX_PYTHON_VERSION"
+        echo "   Recreating virtual environment..."
+        rm -rf .venv
+      fi
+    fi
+    
     # Create and activate virtual environment if it doesn't exist
     if [ ! -d .venv ]; then
-      echo "Creating Python virtual environment..."
+      echo "Creating Python virtual environment with Python 3.13..."
       python -m venv .venv
     fi
-
+    
     source .venv/bin/activate
-
-    # Try to ensure key Python packages are available in the venv as a fallback.
-    # We prefer Nix-provided packages (above), but in case an attribute is missing
-    # we pip-install here (quietly).
-    echo "Ensuring Python packages in .venv (fallback installs if needed)..."
-    pip install --quiet scikit-learn scikit-image seaborn pandas jupyterlab pillow --no-deps 2>/dev/null || true
-
-    # Install scikit-fuzzy without matplotlib (avoid tkinter issues) — keep existing pip fallback.
-    echo "Installing scikit-fuzzy..."
-    pip install --quiet scikit-fuzzy --no-deps 2>/dev/null || true
-
+    
+    # Upgrade pip
+    pip install --quiet --upgrade pip 2>/dev/null || true
+    
+    # Install required packages
+    echo "Ensuring Python runtime packages are installed in .venv ..."
+    pip install --quiet scikit-fuzzy scikit-learn scikit-image 2>/dev/null || true
+    
     echo ""
     echo "Available libraries:"
     echo "  - GLFW (OpenGL window management)"
     echo "  - Mesa (OpenGL implementation)"
     echo "  - GLM (OpenGL Mathematics)"
-    echo "  - Python packages: numpy, scipy, (scikit-learn, scikit-image, scikit-fuzzy, pandas, seaborn, jupyterlab, pillow)"
+    echo "  - Python packages: numpy, scipy, scikit-fuzzy, scikit-learn"
     echo ""
     echo "Virtual environment activated at .venv/"
+    echo "Python interpreter: $(which python)"
     echo ""
-
+    echo "Environment info:"
+    echo "  Python: $(python --version)"
+    echo "  sys.executable: $(python -c 'import sys; print(sys.executable)')"
+    echo "  scikit-learn: $(python -c 'import sklearn; print(sklearn.__version__)' 2>/dev/null || echo 'not installed')"
+    echo "  scikit-fuzzy: $(python -c 'import skfuzzy; print("available")' 2>/dev/null || echo 'not installed')"
+    echo "  scikit-image: $(python -c 'import skimage; print("available")' 2>/dev/null || echo 'not installed')"
+    echo ""
+    
     # Set library paths for dynamic linking
     export LD_LIBRARY_PATH="${pkgs.libGL}/lib:${pkgs.mesa}/lib:${pkgs.glfw}/lib:$LD_LIBRARY_PATH"
+    
+    # Ensure Python from venv is used
+    export PATH="$PWD/.venv/bin:$PATH"
   '';
-
+  
   # Environment variables for pkg-config to find libraries
   PKG_CONFIG_PATH = "${pkgs.glfw}/lib/pkgconfig:${pkgs.mesa}/lib/pkgconfig";
 }
-
-
-
-# { pkgs ? import <nixpkgs> {} }:
-
-# pkgs.mkShell {
-#   buildInputs = with pkgs; [
-#     # Python with pip for installing packages
-#     python311
-#     python311Packages.pip
-#     python311Packages.virtualenv
-#     python311Packages.packaging
-    
-#     # Core Python packages (pre-installed from Nix)
-#     python311Packages.numpy
-#     python311Packages.scipy
-#     python311Packages.networkx
-    
-#     # Graphics/OpenGL libraries (project-specific)
-#     glfw
-#     glew
-#     mesa
-#     libGL
-#     libGLU
-#     glm
-#     wayland    
-#     # X11 libraries (project-specific)
-#     xorg.libX11
-#     xorg.libXrandr
-#     xorg.libXi
-#     xorg.libXcursor
-#     xorg.libXinerama
-    
-#     # Build tool for pkg-config
-#     pkg-config
-#   ];
-
-#   # Set up environment variables for OpenGL and graphics libraries
-#   shellHook = ''
-#     echo "🚀 OpenGL Python/C++ Development Environment"
-#     echo "Python: $(python --version)"
-#     echo "GCC: $(gcc --version | head -n1)"
-#     echo ""
-    
-#     # Create and activate virtual environment if it doesn't exist
-#     if [ ! -d .venv ]; then
-#       echo "Creating Python virtual environment..."
-#       python -m venv .venv
-#     fi
-    
-#     source .venv/bin/activate
-    
-#     # Install scikit-fuzzy without matplotlib (avoid tkinter issues)
-#     echo "Installing scikit-fuzzy..."
-#     pip install --quiet scikit-fuzzy --no-deps 2>/dev/null || true
-    
-#     echo ""
-#     echo "Available libraries:"
-#     echo "  - GLFW (OpenGL window management)"
-#     echo "  - Mesa (OpenGL implementation)"
-#     echo "  - GLM (OpenGL Mathematics)"
-#     echo "  - Python packages: numpy, scipy, scikit-fuzzy"
-#     echo ""
-#     echo "Virtual environment activated at .venv/"
-#     echo ""
-    
-#     # Set library paths for dynamic linking
-#     export LD_LIBRARY_PATH="${pkgs.libGL}/lib:${pkgs.mesa}/lib:${pkgs.glfw}/lib:$LD_LIBRARY_PATH"
-#   '';
-
-#   # Environment variables for pkg-config to find libraries
-#   PKG_CONFIG_PATH = "${pkgs.glfw}/lib/pkgconfig:${pkgs.mesa}/lib/pkgconfig";
-# }
-
-# { pkgs ? import <nixpkgs> {} }:
-
-# pkgs.mkShell {
-#   buildInputs = with pkgs; [
-#     # Project-specific Python packages
-#     python311Packages.numpy
-#     python311Packages.scikit-fuzzy
-    
-#     # Graphics/OpenGL libraries (project-specific)
-#     glfw
-#     glew
-#     mesa
-#     libGL
-#     libGLU
-#     glm
-    
-#     # X11 libraries (project-specific)
-#     xorg.libX11
-#     xorg.libXrandr
-#     xorg.libXi
-#     xorg.libXcursor
-#     xorg.libXinerama
-    
-#     # Build tool for pkg-config
-#     pkg-config
-#   ];
-
-#   # Set up environment variables for OpenGL and graphics libraries
-#   shellHook = ''
-#     echo "🚀 OpenGL Python/C++ Development Environment"
-#     echo "Python: $(python --version)"
-#     echo "GCC: $(gcc --version | head -n1)"
-#     echo ""
-#     echo "Available libraries:"
-#     echo "  - GLFW (OpenGL window management)"
-#     echo "  - Mesa (OpenGL implementation)"
-#     echo "  - GLM (OpenGL Mathematics)"
-#     echo "  - Python packages: numpy, scikit-fuzzy"
-#     echo ""
-    
-#     # Make sure Python can find the packages
-#     export PYTHONPATH="${pkgs.python311Packages.numpy}/${pkgs.python311.sitePackages}:${pkgs.python311Packages.scikit-fuzzy}/${pkgs.python311.sitePackages}:$PYTHONPATH"
-    
-#     # Set library paths for dynamic linking
-#     export LD_LIBRARY_PATH="${pkgs.libGL}/lib:${pkgs.mesa}/lib:${pkgs.glfw}/lib:$LD_LIBRARY_PATH"
-#   '';
-
-#   # Environment variables for pkg-config to find libraries
-#   PKG_CONFIG_PATH = "${pkgs.glfw}/lib/pkgconfig:${pkgs.mesa}/lib/pkgconfig";
-# }

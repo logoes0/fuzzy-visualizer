@@ -89,7 +89,6 @@ def generate_gmm_membership_params(data, n_components=3):
     return params
 
 # Generate training data
-print("Generating data-driven membership functions...")
 training_data = generate_synthetic_training_data(n_samples=500)
 
 # Generate GMM parameters for each metric
@@ -98,8 +97,6 @@ temp_gmm = generate_gmm_membership_params(training_data['temp'])
 gpu_load_gmm = generate_gmm_membership_params(training_data['gpu_load'])
 vram_gmm = generate_gmm_membership_params(training_data['vram_usage'])
 motion_gmm = generate_gmm_membership_params(training_data['motion_intensity'])
-
-print("GMM-based membership functions generated.")
 
 # --------------------------------------------------------------------------
 # FUZZY VARIABLE DEFINITIONS
@@ -262,96 +259,4 @@ def compute_quality(fps, temp, gpu_load, vram_usage, motion_intensity):
         
         return result
     except Exception as e:
-        print(f"Fuzzy computation error: {e}")
         return 1  # Default to medium quality on error
-
-
-# --------------------------------------------------------------------------
-# OPTIONAL: TESTING/DEBUGGING FUNCTIONS
-# --------------------------------------------------------------------------
-
-def print_gmm_parameters():
-    """Print the GMM-derived membership function parameters."""
-    print("\n=== GMM-Derived Membership Function Parameters ===")
-    print(f"\nFPS (low, medium, high):")
-    for i, (mean, sigma) in enumerate(fps_gmm):
-        print(f"  Level {i}: mean={mean:.2f}, sigma={sigma:.2f}")
-    
-    print(f"\nTemperature (cool, warm, hot):")
-    for i, (mean, sigma) in enumerate(temp_gmm):
-        print(f"  Level {i}: mean={mean:.2f}, sigma={sigma:.2f}")
-    
-    print(f"\nGPU Load (low, medium, high):")
-    for i, (mean, sigma) in enumerate(gpu_load_gmm):
-        print(f"  Level {i}: mean={mean:.2f}, sigma={sigma:.2f}")
-    
-    print(f"\nVRAM Usage (low, medium, high):")
-    for i, (mean, sigma) in enumerate(vram_gmm):
-        print(f"  Level {i}: mean={mean:.2f}, sigma={sigma:.2f}")
-    
-    print(f"\nMotion Intensity (static, moderate, fast):")
-    for i, (mean, sigma) in enumerate(motion_gmm):
-        print(f"  Level {i}: mean={mean:.2f}, sigma={sigma:.2f}")
-
-def print_membership_values(fps, temp, gpu_load, vram_usage, motion_intensity):
-    """
-    Debug function to print membership values for all inputs.
-    """
-    print(f"\n=== Input Values ===")
-    print(f"FPS: {fps}, Temp: {temp}, GPU Load: {gpu_load}")
-    print(f"VRAM: {vram_usage}, Motion: {motion_intensity}")
-    
-    print(f"\n=== Membership Degrees ===")
-    print(f"FPS - Low: {fuzz.interp_membership(fps_var.universe, fps_var['low'].mf, fps):.2f}")
-    print(f"FPS - Medium: {fuzz.interp_membership(fps_var.universe, fps_var['medium'].mf, fps):.2f}")
-    print(f"FPS - High: {fuzz.interp_membership(fps_var.universe, fps_var['high'].mf, fps):.2f}")
-    
-    print(f"Temp - Cool: {fuzz.interp_membership(temp_var.universe, temp_var['cool'].mf, temp):.2f}")
-    print(f"Temp - Warm: {fuzz.interp_membership(temp_var.universe, temp_var['warm'].mf, temp):.2f}")
-    print(f"Temp - Hot: {fuzz.interp_membership(temp_var.universe, temp_var['hot'].mf, temp):.2f}")
-
-
-# --------------------------------------------------------------------------
-# EXAMPLE USAGE
-# --------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    print("=== Data-Driven Fuzzy Quality Calculator (GMM-based) ===\n")
-    
-    # Print GMM parameters
-    print_gmm_parameters()
-    
-    # Test Case 1: High Quality Scenario
-    print("\n" + "="*50)
-    print("Test 1: High Quality Scenario")
-    print("High FPS, Cool Temp, Low GPU Load")
-    quality = compute_quality(fps=100, temp=50, gpu_load=30, vram_usage=25, motion_intensity=10)
-    print(f"Result: Quality = {quality} (0=Low, 1=Medium, 2=High)")
-    print_membership_values(100, 50, 30, 25, 10)
-    
-    # Test Case 2: Medium Quality Scenario
-    print("\n" + "="*50)
-    print("Test 2: Medium Quality Scenario")
-    print("Medium FPS, Warm Temp, Medium GPU Load")
-    quality = compute_quality(fps=60, temp=70, gpu_load=60, vram_usage=50, motion_intensity=40)
-    print(f"Result: Quality = {quality}")
-    print_membership_values(60, 70, 60, 50, 40)
-    
-    # Test Case 3: Low Quality Scenario
-    print("\n" + "="*50)
-    print("Test 3: Low Quality Scenario")
-    print("Low FPS, Hot Temp, High GPU Load")
-    quality = compute_quality(fps=25, temp=90, gpu_load=85, vram_usage=80, motion_intensity=70)
-    print(f"Result: Quality = {quality}")
-    print_membership_values(25, 90, 85, 80, 70)
-    
-    # Test Case 4: Edge Case - All moderate
-    print("\n" + "="*50)
-    print("Test 4: Balanced Scenario")
-    print("All moderate values")
-    quality = compute_quality(fps=60, temp=60, gpu_load=50, vram_usage=50, motion_intensity=50)
-    print(f"Result: Quality = {quality}")
-    print_membership_values(60, 60, 50, 50, 50)
-    
-    print("\n" + "="*50)
-    print("Testing complete!")
