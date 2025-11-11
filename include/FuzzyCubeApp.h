@@ -14,6 +14,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+// Global verbose flag for debug output
+extern bool g_verbose;
+
+// OpenGL debugging utilities
+void GLAPIENTRY glDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                                GLsizei length, const GLchar* message, const void* userParam);
+void checkGLError(const char* operation);
+
 // Forward declarations
 class CubeRenderer;
 class ShaderManager;

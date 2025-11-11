@@ -1,5 +1,70 @@
 #include "../include/FuzzyCubeApp.h"
 
+// Global verbose flag
+bool g_verbose = false;
+
+// OpenGL debug callback for automatic error reporting
+void GLAPIENTRY glDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                                GLsizei length, const GLchar* message, const void* userParam) {
+    // Ignore non-significant error/warning codes (NVIDIA-specific notifications)
+    if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+    
+    std::cerr << "-----GL DEBUG-----" << std::endl;
+    std::cerr << "ID: " << id << std::endl;
+    std::cerr << "Message: " << message << std::endl;
+    
+    switch (source) {
+        case GL_DEBUG_SOURCE_API:             std::cerr << "Source: API"; break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cerr << "Source: Window System"; break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cerr << "Source: Shader Compiler"; break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cerr << "Source: Third Party"; break;
+        case GL_DEBUG_SOURCE_APPLICATION:     std::cerr << "Source: Application"; break;
+        case GL_DEBUG_SOURCE_OTHER:           std::cerr << "Source: Other"; break;
+    } std::cerr << std::endl;
+    
+    switch (type) {
+        case GL_DEBUG_TYPE_ERROR:               std::cerr << "Type: Error"; break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cerr << "Type: Deprecated Behaviour"; break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cerr << "Type: Undefined Behaviour"; break;
+        case GL_DEBUG_TYPE_PORTABILITY:         std::cerr << "Type: Portability"; break;
+        case GL_DEBUG_TYPE_PERFORMANCE:         std::cerr << "Type: Performance"; break;
+        case GL_DEBUG_TYPE_MARKER:              std::cerr << "Type: Marker"; break;
+        case GL_DEBUG_TYPE_PUSH_GROUP:          std::cerr << "Type: Push Group"; break;
+        case GL_DEBUG_TYPE_POP_GROUP:           std::cerr << "Type: Pop Group"; break;
+        case GL_DEBUG_TYPE_OTHER:               std::cerr << "Type: Other"; break;
+    } std::cerr << std::endl;
+    
+    switch (severity) {
+        case GL_DEBUG_SEVERITY_HIGH:         std::cerr << "Severity: high"; break;
+        case GL_DEBUG_SEVERITY_MEDIUM:       std::cerr << "Severity: medium"; break;
+        case GL_DEBUG_SEVERITY_LOW:          std::cerr << "Severity: low"; break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: std::cerr << "Severity: notification"; break;
+    } std::cerr << std::endl;
+    std::cerr << std::endl;
+}
+
+// Check for OpenGL errors and print them
+void checkGLError(const char* operation) {
+    GLenum err;
+    bool hadError = false;
+    while ((err = glGetError()) != GL_NO_ERROR) {
+        hadError = true;
+        std::cerr << "[GL ERROR] After " << operation << ": ";
+        switch (err) {
+            case GL_INVALID_ENUM:      std::cerr << "GL_INVALID_ENUM"; break;
+            case GL_INVALID_VALUE:     std::cerr << "GL_INVALID_VALUE"; break;
+            case GL_INVALID_OPERATION: std::cerr << "GL_INVALID_OPERATION"; break;
+            case GL_OUT_OF_MEMORY:     std::cerr << "GL_OUT_OF_MEMORY"; break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION: std::cerr << "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
+            default: std::cerr << "Unknown error code: " << err; break;
+        }
+        std::cerr << std::endl;
+    }
+    if (g_verbose && !hadError) {
+        std::cout << "[GL OK] " << operation << " completed without errors" << std::endl;
+    }
+}
+
 // Cube vertex data definitions
 namespace CubeData {
     // Simple cube for low quality (24 triangles - visible faces only)
@@ -558,6 +623,18 @@ bool FuzzyCubeApp::initialize() {
     
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
     
+    // Register OpenGL debug callback if available
+    if (GLEW_ARB_debug_output || GLEW_VERSION_4_3) {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);  // Synchronous for easier debugging
+        glDebugMessageCallback(glDebugCallback, nullptr);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+        std::cout << "[DEBUG] GL debug callback registered" << std::endl;
+        checkGLError("GL debug callback setup");
+    } else {
+        std::cout << "[DEBUG] GL debug output not available on this system" << std::endl;
+    }
+    
     // Configure OpenGL
     glEnable(GL_DEPTH_TEST);
     glViewport(0, 0, 1200, 800);
@@ -626,13 +703,15 @@ void FuzzyCubeApp::render() {
                                                           cubeRenderer.getSimpleVAO(), 
                                                           cubeRenderer.getFullVAO());
     
-    // Debug: Print current settings
-    std::cout << "Quality: " << quality << " | Resolution: " << settings.renderWidth << "x" << settings.renderHeight 
-              << " | Triangles: " << settings.triangleCount << " | PixelSize: " << settings.pixelSize;
-    if (manualQuality >= 0) {
-        std::cout << " (MANUAL)";
+    // Debug: Print current settings (only if verbose)
+    if (g_verbose) {
+        std::cout << "Quality: " << quality << " | Resolution: " << settings.renderWidth << "x" << settings.renderHeight 
+                  << " | Triangles: " << settings.triangleCount << " | PixelSize: " << settings.pixelSize;
+        if (manualQuality >= 0) {
+            std::cout << " (MANUAL)";
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
     
     // Resize framebuffer texture based on quality
     framebufferManager.resize(settings.renderWidth, settings.renderHeight);
