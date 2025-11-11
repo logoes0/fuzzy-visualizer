@@ -67,7 +67,7 @@ void checkGLError(const char* operation) {
 
 // Cube vertex data definitions
 namespace CubeData {
-    // Simple cube for low quality - distinct colors per face for visibility
+    // Simple cube for low quality - all 6 faces with distinct colors
     float simpleCubeVertices[] = {
         // Front face (bright red-orange)
         -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.9f, 0.3f, 0.2f,
@@ -77,29 +77,45 @@ namespace CubeData {
          0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.9f, 0.3f, 0.2f,
         -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.9f, 0.3f, 0.2f,
         
+        // Back face (purple)
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.6f, 0.2f, 0.8f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.6f, 0.2f, 0.8f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.6f, 0.2f, 0.8f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.6f, 0.2f, 0.8f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.6f, 0.2f, 0.8f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.6f, 0.2f, 0.8f,
+        
         // Right face (bright green)
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
          0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
          0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.2f, 0.8f, 0.3f,
+        
+        // Left face (yellow-orange)
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
         
         // Top face (bright blue)
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.3f, 0.4f, 0.9f,
          0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.3f, 0.4f, 0.9f,
          0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.3f, 0.4f, 0.9f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.3f, 0.4f, 0.9f,
          0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.3f, 0.4f, 0.9f,
         -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.3f, 0.4f, 0.9f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.3f, 0.4f, 0.9f,
         
-        // Left face (yellow-orange)
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.9f, 0.7f, 0.2f
+        // Bottom face (cyan)
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.2f, 0.8f, 0.8f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.2f, 0.8f, 0.8f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.2f, 0.8f, 0.8f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.2f, 0.8f, 0.8f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.2f, 0.8f, 0.8f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.2f, 0.8f, 0.8f
     };
 
     // Indexed 3D Cube vertices (24 unique vertices, 4 per face)
@@ -557,7 +573,7 @@ void CubeRenderer::renderSimpleCube(GLuint program) {
     glUseProgram(program);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindVertexArray(simpleCubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 24);
+    glDrawArrays(GL_TRIANGLES, 0, 36);  // Now rendering all 6 faces
 }
 
 void CubeRenderer::renderScreenQuad() {
@@ -743,8 +759,8 @@ QualitySettings QualitySettings::getSettings(int quality, GLuint simpleProgram, 
         settings.renderWidth = 600;   // 50% resolution
         settings.renderHeight = 400;
         settings.cubeProgram = simpleProgram;  // No lighting calculations
-        settings.cubeVAO = simpleVAO;          // Simple cube (non-indexed, 24 vertices)
-        settings.indexCount = 24;              // Vertex count for glDrawArrays
+        settings.cubeVAO = simpleVAO;          // Simple cube (non-indexed, 36 vertices, 6 faces)
+        settings.indexCount = 36;              // Vertex count for glDrawArrays
         settings.pixelSize = 32.0f;   // More pixelation
     } else if (quality == 1) {
         // Medium quality: Moderate settings
