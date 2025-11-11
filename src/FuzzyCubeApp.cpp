@@ -173,7 +173,7 @@ std::string ShaderManager::loadShaderSource(const std::string& filePath) {
     return buffer.str();
 }
 
-GLuint ShaderManager::compileShader(GLenum type, const std::string& source) {
+GLuint ShaderManager::compileShader(GLenum type, const std::string& source, const std::string& shaderName) {
     GLuint shader = glCreateShader(type);
     const char* src = source.c_str();
     glShaderSource(shader, 1, &src, nullptr);
@@ -183,29 +183,39 @@ GLuint ShaderManager::compileShader(GLenum type, const std::string& source) {
     GLint success;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        GLchar infoLog[512];
-        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        std::cerr << "Shader compilation error: " << infoLog << std::endl;
+        GLchar infoLog[1024];
+        glGetShaderInfoLog(shader, 1024, nullptr, infoLog);
+        const char* typeStr = (type == GL_VERTEX_SHADER) ? "VERTEX" : "FRAGMENT";
+        std::cerr << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
+        std::cerr << "❌ FATAL: " << typeStr << " SHADER COMPILATION FAILED" << std::endl;
+        std::cerr << "Shader: " << shaderName << std::endl;
+        std::cerr << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
+        std::cerr << infoLog << std::endl;
+        std::cerr << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
         glDeleteShader(shader);
-        return 0;
+        // Make shader compilation failures fatal to prevent rendering with broken shaders
+        std::cerr << "Application cannot continue with invalid shaders. Exiting." << std::endl;
+        std::exit(1);
+    }
+    if (g_verbose) {
+        std::cout << "[SHADER] Compiled " << shaderName << " successfully" << std::endl;
     }
     return shader;
 }
 
 GLuint ShaderManager::createShaderProgram(const std::string& vertexPath, const std::string& fragmentPath) {
+    std::cout << "[SHADER] Creating program from " << vertexPath << " + " << fragmentPath << std::endl;
+    
     std::string vertexSource = loadShaderSource(vertexPath);
     std::string fragmentSource = loadShaderSource(fragmentPath);
     
     if (vertexSource.empty() || fragmentSource.empty()) {
-        return 0;
+        std::cerr << "❌ FATAL: Failed to load shader sources" << std::endl;
+        std::exit(1);
     }
     
-    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexSource);
-    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
-    
-    if (vertexShader == 0 || fragmentShader == 0) {
-        return 0;
-    }
+    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexSource, vertexPath);
+    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentSource, fragmentPath);
     
     GLuint program = glCreateProgram();
     glAttachShader(program, vertexShader);
@@ -216,16 +226,123 @@ GLuint ShaderManager::createShaderProgram(const std::string& vertexPath, const s
     GLint success;
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     if (!success) {
-        GLchar infoLog[512];
-        glGetProgramInfoLog(program, 512, nullptr, infoLog);
-        std::cerr << "Shader program linking error: " << infoLog << std::endl;
+        GLchar infoLog[1024];
+        glGetProgramInfoLog(program, 1024, nullptr, infoLog);
+        std::cerr << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
+        std::cerr << "❌ FATAL: SHADER PROGRAM LINKING FAILED" << std::endl;
+        std::cerr << "Program: " << vertexPath << " + " << fragmentPath << std::endl;
+        std::cerr << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
+        std::cerr << infoLog << std::endl;
+        std::cerr << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
         glDeleteProgram(program);
-        return 0;
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        std::cerr << "Application cannot continue with invalid shader program. Exiting." << std::endl;
+        std::exit(1);
     }
+    
+    // Validate the program
+    validateProgram(program, vertexPath + "+" + fragmentPath);
     
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+    
+    std::cout << "[SHADER] Program created successfully (ID: " << program << ")" << std::endl;
     return program;
+}
+
+GLuint ShaderManager::reloadShaderProgram(GLuint oldProgram, const std::string& vertexPath, const std::string& fragmentPath) {
+    std::cout << "[SHADER] Attempting to reload shader program..." << std::endl;
+    
+    // Try to create new program
+    std::string vertexSource = loadShaderSource(vertexPath);
+    std::string fragmentSource = loadShaderSource(fragmentPath);
+    
+    if (vertexSource.empty() || fragmentSource.empty()) {
+        std::cerr << "[SHADER] Failed to load shader sources, keeping old program" << std::endl;
+        return oldProgram;
+    }
+    
+    // Compile shaders (but don't exit on failure for hot-reload)
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    const char* vSrc = vertexSource.c_str();
+    glShaderSource(vertexShader, 1, &vSrc, nullptr);
+    glCompileShader(vertexShader);
+    
+    GLint vSuccess;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &vSuccess);
+    if (!vSuccess) {
+        GLchar infoLog[1024];
+        glGetShaderInfoLog(vertexShader, 1024, nullptr, infoLog);
+        std::cerr << "[SHADER] Vertex shader compilation failed during reload:" << std::endl;
+        std::cerr << infoLog << std::endl;
+        glDeleteShader(vertexShader);
+        return oldProgram;
+    }
+    
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    const char* fSrc = fragmentSource.c_str();
+    glShaderSource(fragmentShader, 1, &fSrc, nullptr);
+    glCompileShader(fragmentShader);
+    
+    GLint fSuccess;
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &fSuccess);
+    if (!fSuccess) {
+        GLchar infoLog[1024];
+        glGetShaderInfoLog(fragmentShader, 1024, nullptr, infoLog);
+        std::cerr << "[SHADER] Fragment shader compilation failed during reload:" << std::endl;
+        std::cerr << infoLog << std::endl;
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        return oldProgram;
+    }
+    
+    // Link new program
+    GLuint newProgram = glCreateProgram();
+    glAttachShader(newProgram, vertexShader);
+    glAttachShader(newProgram, fragmentShader);
+    glLinkProgram(newProgram);
+    
+    GLint linkSuccess;
+    glGetProgramiv(newProgram, GL_LINK_STATUS, &linkSuccess);
+    if (!linkSuccess) {
+        GLchar infoLog[1024];
+        glGetProgramInfoLog(newProgram, 1024, nullptr, infoLog);
+        std::cerr << "[SHADER] Program linking failed during reload:" << std::endl;
+        std::cerr << infoLog << std::endl;
+        glDeleteProgram(newProgram);
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        return oldProgram;
+    }
+    
+    // Success! Delete old program and return new one
+    glDeleteProgram(oldProgram);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    
+    std::cout << "[SHADER] ✅ Shader program reloaded successfully (new ID: " << newProgram << ")" << std::endl;
+    return newProgram;
+}
+
+bool ShaderManager::validateProgram(GLuint program, const std::string& programName) {
+    glValidateProgram(program);
+    
+    GLint status;
+    glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
+    
+    if (status == GL_FALSE) {
+        GLchar infoLog[1024];
+        glGetProgramInfoLog(program, 1024, nullptr, infoLog);
+        std::cerr << "[SHADER WARNING] Program validation failed for " << programName << ":" << std::endl;
+        std::cerr << infoLog << std::endl;
+        return false;
+    }
+    
+    if (g_verbose) {
+        std::cout << "[SHADER] Program " << programName << " validated successfully" << std::endl;
+    }
+    return true;
 }
 
 // FramebufferManager implementation

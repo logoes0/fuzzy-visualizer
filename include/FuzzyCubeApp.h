@@ -40,8 +40,10 @@ namespace CubeData {
 class ShaderManager {
 public:
     static std::string loadShaderSource(const std::string& filePath);
-    static GLuint compileShader(GLenum type, const std::string& source);
+    static GLuint compileShader(GLenum type, const std::string& source, const std::string& shaderName);
     static GLuint createShaderProgram(const std::string& vertexPath, const std::string& fragmentPath);
+    static GLuint reloadShaderProgram(GLuint oldProgram, const std::string& vertexPath, const std::string& fragmentPath);
+    static bool validateProgram(GLuint program, const std::string& programName);
 };
 
 // Structure to hold FBO resources for a single quality level
