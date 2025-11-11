@@ -74,13 +74,13 @@ public:
 // Cube renderer class
 class CubeRenderer {
 private:
-    GLuint cubeVAO, cubeVBO;
-    GLuint simpleCubeVAO, simpleCubeVBO;
-    GLuint quadVAO, quadVBO;
+    GLuint cubeVAO, cubeVBO, cubeEBO;  // Full cube with indexed geometry
+    GLuint simpleCubeVAO, simpleCubeVBO;  // Simple cube (no indexing for low quality)
+    GLuint quadVAO, quadVBO;  // Screen quad for post-processing
 
 public:
     bool initialize();
-    void renderCube(GLuint program, int triangleCount);
+    void renderCube(GLuint program, int indexCount);
     void renderSimpleCube(GLuint program);
     void renderScreenQuad();
     void cleanup();
@@ -115,7 +115,7 @@ struct QualitySettings {
     int renderWidth, renderHeight;
     GLuint cubeProgram;
     GLuint cubeVAO;
-    int triangleCount;
+    int indexCount;  // Number of indices to draw (for indexed geometry) or vertex count
     float pixelSize;
     
     static QualitySettings getSettings(int quality, GLuint simpleProgram, GLuint mediumProgram, 

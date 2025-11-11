@@ -102,50 +102,61 @@ namespace CubeData {
         -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f
     };
 
-    // 3D Cube vertices with positions, normals, and colors
+    // Indexed 3D Cube vertices (24 unique vertices, 4 per face)
+    // Each face has its own vertices with correct per-face normals
     float cubeVertices[] = {
         // positions          // normals           // colors
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
-
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.0f
+        // Back face (normal: 0, 0, -1)
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f, 0.0f,  // 0
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,  // 1
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,  // 2
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f, 0.0f,  // 3
+        
+        // Front face (normal: 0, 0, 1)
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,  // 4
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f, 1.0f,  // 5
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f, 0.0f,  // 6
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,  // 7
+        
+        // Left face (normal: -1, 0, 0)
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 1.0f,  // 8
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f, 1.0f,  // 9
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,  // 10
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,  // 11
+        
+        // Right face (normal: 1, 0, 0)
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 0.0f,  // 12
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f, 1.0f,  // 13
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,  // 14
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,  // 15
+        
+        // Bottom face (normal: 0, -1, 0)
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,  // 16
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f, 1.0f,  // 17
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f, 0.0f,  // 18
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  // 19
+        
+        // Top face (normal: 0, 1, 0)
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.0f,  // 20
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,  // 21
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  // 22
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f, 1.0f   // 23
+    };
+    
+    // Index array for the cube (36 indices = 12 triangles = 6 faces × 2 triangles)
+    unsigned int cubeIndices[] = {
+        // Back face
+        0, 1, 2,  2, 3, 0,
+        // Front face
+        4, 5, 6,  6, 7, 4,
+        // Left face
+        8, 9, 10,  10, 11, 8,
+        // Right face
+        12, 13, 14,  14, 15, 12,
+        // Bottom face
+        16, 17, 18,  18, 19, 16,
+        // Top face
+        20, 21, 22,  22, 23, 20
     };
 
     // Screen quad vertices for post-processing
@@ -450,17 +461,26 @@ void FramebufferManager::cleanup() {
 bool CubeRenderer::initialize() {
     std::cout << "[DEBUG CubeRenderer] Starting cube renderer initialization..." << std::endl;
     
-    // Create and bind VAO/VBO for full cube
-    std::cout << "[DEBUG CubeRenderer] Creating full cube VAO/VBO..." << std::endl;
+    // Create and bind VAO/VBO/EBO for full cube with indexed geometry
+    std::cout << "[DEBUG CubeRenderer] Creating full cube VAO/VBO/EBO (indexed geometry)..." << std::endl;
     glGenVertexArrays(1, &cubeVAO);
     glGenBuffers(1, &cubeVBO);
+    glGenBuffers(1, &cubeEBO);
     
     std::cout << "[DEBUG CubeRenderer] Binding full cube..." << std::endl;
     glBindVertexArray(cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
     
-    std::cout << "[DEBUG CubeRenderer] Uploading full cube data (size: " << sizeof(CubeData::cubeVertices) << ")..." << std::endl;
+    // Upload vertex data
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    std::cout << "[DEBUG CubeRenderer] Uploading full cube vertex data (size: " << sizeof(CubeData::cubeVertices) << " bytes, 24 vertices)..." << std::endl;
     glBufferData(GL_ARRAY_BUFFER, sizeof(CubeData::cubeVertices), CubeData::cubeVertices, GL_STATIC_DRAW);
+    checkGLError("Cube VBO upload");
+    
+    // Upload index data
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
+    std::cout << "[DEBUG CubeRenderer] Uploading full cube index data (size: " << sizeof(CubeData::cubeIndices) << " bytes, 36 indices)..." << std::endl;
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(CubeData::cubeIndices), CubeData::cubeIndices, GL_STATIC_DRAW);
+    checkGLError("Cube EBO upload");
     
     std::cout << "[DEBUG CubeRenderer] Setting up full cube attributes..." << std::endl;
     // Position attribute
@@ -472,6 +492,7 @@ bool CubeRenderer::initialize() {
     // Color attribute
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+    checkGLError("Cube VAO setup");
     
     // Create and bind VAO/VBO for simple cube (low quality)
     std::cout << "[DEBUG CubeRenderer] Creating simple cube VAO/VBO..." << std::endl;
@@ -521,11 +542,15 @@ bool CubeRenderer::initialize() {
     return true;
 }
 
-void CubeRenderer::renderCube(GLuint program, int triangleCount) {
+void CubeRenderer::renderCube(GLuint program, int indexCount) {
     glUseProgram(program);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, triangleCount);
+    // Use indexed drawing (EBO is already bound to the VAO)
+    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+    if (g_verbose) {
+        checkGLError("Cube draw elements");
+    }
 }
 
 void CubeRenderer::renderSimpleCube(GLuint program) {
@@ -543,6 +568,7 @@ void CubeRenderer::renderScreenQuad() {
 void CubeRenderer::cleanup() {
     glDeleteVertexArrays(1, &cubeVAO);
     glDeleteBuffers(1, &cubeVBO);
+    glDeleteBuffers(1, &cubeEBO);  // Delete the index buffer
     glDeleteVertexArrays(1, &simpleCubeVAO);
     glDeleteBuffers(1, &simpleCubeVBO);
     glDeleteVertexArrays(1, &quadVAO);
@@ -709,7 +735,7 @@ void PythonManager::cleanup() {
 
 // QualitySettings implementation
 QualitySettings QualitySettings::getSettings(int quality, GLuint simpleProgram, GLuint mediumProgram, 
-                                           GLuint highProgram, GLuint simpleVAO, GLuint fullVAO) {
+                                          GLuint highProgram, GLuint simpleVAO, GLuint fullVAO) {
     QualitySettings settings;
     
     if (quality == 0) {
@@ -717,24 +743,24 @@ QualitySettings QualitySettings::getSettings(int quality, GLuint simpleProgram, 
         settings.renderWidth = 600;   // 50% resolution
         settings.renderHeight = 400;
         settings.cubeProgram = simpleProgram;  // No lighting calculations
-        settings.cubeVAO = simpleVAO;          // 24 triangles (4 visible faces)
-        settings.triangleCount = 24;
+        settings.cubeVAO = simpleVAO;          // Simple cube (non-indexed, 24 vertices)
+        settings.indexCount = 24;              // Vertex count for glDrawArrays
         settings.pixelSize = 32.0f;   // More pixelation
     } else if (quality == 1) {
         // Medium quality: Moderate settings
         settings.renderWidth = 900;   // 75% resolution
         settings.renderHeight = 600;
         settings.cubeProgram = mediumProgram;  // Basic lighting only
-        settings.cubeVAO = fullVAO;            // Full geometry
-        settings.triangleCount = 36;
+        settings.cubeVAO = fullVAO;            // Full indexed geometry
+        settings.indexCount = 36;              // Index count for glDrawElements (36 indices)
         settings.pixelSize = 64.0f;   // Medium pixelation
     } else {
         // High quality: Full quality
         settings.renderWidth = 1200;  // 100% resolution
         settings.renderHeight = 800;
         settings.cubeProgram = highProgram;    // Full lighting
-        settings.cubeVAO = fullVAO;            // Full geometry
-        settings.triangleCount = 36;
+        settings.cubeVAO = fullVAO;            // Full indexed geometry
+        settings.indexCount = 36;              // Index count for glDrawElements (36 indices)
         settings.pixelSize = 200.0f;  // Minimal pixelation
     }
     
@@ -876,7 +902,7 @@ void FuzzyCubeApp::render() {
     // Debug: Print current settings (only if verbose)
     if (g_verbose) {
         std::cout << "Quality: " << quality << " | Resolution: " << settings.renderWidth << "x" << settings.renderHeight 
-                  << " | Triangles: " << settings.triangleCount << " | PixelSize: " << settings.pixelSize;
+                  << " | Indices: " << settings.indexCount << " | PixelSize: " << settings.pixelSize;
         if (manualQuality >= 0) {
             std::cout << " (MANUAL)";
         }
@@ -928,7 +954,7 @@ void FuzzyCubeApp::render() {
     if (quality == 0) {
         cubeRenderer.renderSimpleCube(settings.cubeProgram);
     } else {
-        cubeRenderer.renderCube(settings.cubeProgram, settings.triangleCount);
+        cubeRenderer.renderCube(settings.cubeProgram, settings.indexCount);
     }
     
     // Second pass: Render fullscreen quad with pixelation shader
