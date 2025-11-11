@@ -103,6 +103,8 @@ class PythonManager {
 private:
     PyObject* pModule;
     PyObject* pFunc;
+    PyObject* pSimClass;  // ControlSystemSimulation class
+    PyObject* pSim;       // Cached simulation object
 
 public:
     bool initialize();
