@@ -603,16 +603,17 @@ bool ImGuiManager::initialize(GLFWwindow* window) {
     return true;
 }
 
-void ImGuiManager::renderUI(float& fps, float& temp, float& gpuLoad, float& vramUsage, 
-                           float& motionIntensity, float& cameraDistance, 
-                           float& rotationX, float& rotationY, int quality, bool isManualOverride) {
+void ImGuiManager::renderUI(float& cpuLoad, float& temp, float& gpuLoad, float& vramUsage,
+                           float& cameraDistance, float& rotationX, float& rotationY, 
+                           int quality, bool isManualOverride) {
     ImGui::Begin("Fuzzy Logic Parameters");
-    ImGui::SliderFloat("FPS", &fps, 0.0f, 120.0f);
-    ImGui::SliderFloat("GPU Temperature", &temp, 20.0f, 100.0f);
-    ImGui::SliderFloat("GPU Load %", &gpuLoad, 0.0f, 100.0f);
-    ImGui::SliderFloat("VRAM Usage %", &vramUsage, 0.0f, 100.0f);
-    ImGui::SliderFloat("Motion Intensity %", &motionIntensity, 0.0f, 100.0f);
+    ImGui::Text("System Metrics (used to calculate power consumption):");
+    ImGui::SliderFloat("CPU Load", &cpuLoad, 0.0f, 200.0f);
+    ImGui::SliderFloat("Temperature", &temp, 25.0f, 120.0f);
+    ImGui::SliderFloat("GPU Load", &gpuLoad, 1.0f, 5.0f);
+    ImGui::SliderFloat("VRAM Usage", &vramUsage, 0.0f, 50.0f);
     ImGui::Separator();
+    ImGui::Text("Camera Controls:");
     ImGui::SliderFloat("Camera Distance", &cameraDistance, 2.0f, 10.0f);
     ImGui::SliderFloat("Rotation X", &rotationX, -180.0f, 180.0f);
     ImGui::SliderFloat("Rotation Y", &rotationY, -180.0f, 180.0f);
@@ -631,6 +632,11 @@ void ImGuiManager::renderUI(float& fps, float& temp, float& gpuLoad, float& vram
         ImGui::SameLine();
         ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "(AUTO)");
     }
+    
+    ImGui::Separator();
+    ImGui::Text("Fuzzy Logic Flow:");
+    ImGui::BulletText("Metrics -> Power Consumption (fuzzy)");
+    ImGui::BulletText("Power Consumption -> Quality (fuzzy)");
     
     ImGui::End();
 }
@@ -717,18 +723,20 @@ bool PythonManager::initialize() {
     return true;
 }
 
-int PythonManager::getQuality(float fps, float temp, float gpuLoad, float vramUsage, float motionIntensity) {
+int PythonManager::getQuality(float cpuLoad, float temp, float gpuLoad, float vramUsage) {
     if (!pFunc || !PyCallable_Check(pFunc)) {
         std::cerr << "Python function not callable" << std::endl;
         return 1; // Default to medium quality
     }
     
+    // Call compute_quality with the 4 input metrics
+    // motion_intensity is passed but not used (kept for compatibility)
     PyObject* pArgs = PyTuple_Pack(5,
-        PyFloat_FromDouble(fps),
+        PyFloat_FromDouble(cpuLoad),
         PyFloat_FromDouble(temp),
         PyFloat_FromDouble(gpuLoad),
         PyFloat_FromDouble(vramUsage),
-        PyFloat_FromDouble(motionIntensity)
+        PyFloat_FromDouble(50.0)   // motionIntensity (not used, kept for compatibility)
     );
     
     PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
@@ -939,13 +947,13 @@ void FuzzyCubeApp::render() {
     ImGui::NewFrame();
     
     // Get quality for UI display
-    int quality = pythonManager.getQuality(fps, temp, gpuLoad, vramUsage, motionIntensity);
+    int quality = pythonManager.getQuality(cpuLoad, temp, gpuLoad, vramUsage);
     if (manualQuality >= 0) {
         quality = manualQuality;
     }
     
     // Render ImGui UI first
-    ImGuiManager::renderUI(fps, temp, gpuLoad, vramUsage, motionIntensity, 
+    ImGuiManager::renderUI(cpuLoad, temp, gpuLoad, vramUsage, 
                           cameraDistance, rotationX, rotationY, 
                           quality, manualQuality >= 0);
     

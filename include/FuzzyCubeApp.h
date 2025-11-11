@@ -92,9 +92,9 @@ public:
 class ImGuiManager {
 public:
     static bool initialize(GLFWwindow* window);
-    static void renderUI(float& fps, float& temp, float& gpuLoad, float& vramUsage, 
-                        float& motionIntensity, float& cameraDistance, 
-                        float& rotationX, float& rotationY, int quality, bool isManualOverride);
+    static void renderUI(float& cpuLoad, float& temp, float& gpuLoad, float& vramUsage,
+                        float& cameraDistance, float& rotationX, float& rotationY, 
+                        int quality, bool isManualOverride);
     static void shutdown();
 };
 
@@ -108,7 +108,7 @@ private:
 
 public:
     bool initialize();
-    int getQuality(float fps, float temp, float gpuLoad, float vramUsage, float motionIntensity);
+    int getQuality(float cpuLoad, float temp, float gpuLoad, float vramUsage);
     void cleanup();
 };
 
@@ -145,8 +145,8 @@ private:
     GLuint queryIDs[2];  // Timer queries for GPU profiling
     bool enableGPUTimers = false;
     
-    // UI state
-    float fps = 60.0f, temp = 50.0f, gpuLoad = 30.0f, vramUsage = 40.0f, motionIntensity = 20.0f;
+    // UI state (defaults based on CSV data medians)
+    float cpuLoad = 56.0f, temp = 64.0f, gpuLoad = 3.0f, vramUsage = 6.0f;
     float cameraDistance = 3.0f, rotationX = 0.0f, rotationY = 0.0f;
     
     // Manual override state
