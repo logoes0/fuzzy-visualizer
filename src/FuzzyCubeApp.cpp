@@ -876,6 +876,14 @@ bool FuzzyCubeApp::initialize() {
     checkGLError("UBO creation");
     std::cout << "[UBO] Created UBOs for matrices and lighting" << std::endl;
     
+    // Create GPU timer queries for profiling (if supported)
+    if (GLEW_ARB_timer_query || GLEW_VERSION_3_3) {
+        glGenQueries(2, queryIDs);
+        std::cout << "[GPU] Timer queries created for profiling" << std::endl;
+    } else {
+        std::cout << "[GPU] Timer queries not supported on this system" << std::endl;
+    }
+    
     return true;
 }
 
@@ -938,6 +946,11 @@ void FuzzyCubeApp::render() {
             std::cout << " (MANUAL)";
         }
         std::cout << std::endl;
+    }
+    
+    // GPU timer start (if enabled)
+    if (enableGPUTimers) {
+        glQueryCounter(queryIDs[0], GL_TIMESTAMP);
     }
     
     // First pass: Render cube to pre-allocated FBO for this quality level
@@ -1022,6 +1035,18 @@ void FuzzyCubeApp::render() {
     // Render ImGui
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    
+    // GPU timer end and report (if enabled)
+    if (enableGPUTimers) {
+        glQueryCounter(queryIDs[1], GL_TIMESTAMP);
+        GLuint64 startTime, endTime;
+        glGetQueryObjectui64v(queryIDs[0], GL_QUERY_RESULT, &startTime);
+        glGetQueryObjectui64v(queryIDs[1], GL_QUERY_RESULT, &endTime);
+        float gpuTimeMs = (endTime - startTime) / 1000000.0f;
+        if (g_verbose) {
+            std::cout << "[GPU] Frame time: " << gpuTimeMs << " ms" << std::endl;
+        }
+    }
 }
 
 void FuzzyCubeApp::run() {
@@ -1048,6 +1073,9 @@ void FuzzyCubeApp::cleanup() {
     
     glDeleteBuffers(1, &matricesUBO);
     glDeleteBuffers(1, &lightingUBO);
+    if (GLEW_ARB_timer_query || GLEW_VERSION_3_3) {
+        glDeleteQueries(2, queryIDs);
+    }
     
     glfwTerminate();
 }
