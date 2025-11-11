@@ -44,20 +44,28 @@ public:
     static GLuint createShaderProgram(const std::string& vertexPath, const std::string& fragmentPath);
 };
 
-// Framebuffer management class
-class FramebufferManager {
-private:
+// Structure to hold FBO resources for a single quality level
+struct QualityFBO {
     GLuint framebuffer;
     GLuint textureColorbuffer;
     GLuint rbo;
+    int width, height;
+};
+
+// Framebuffer management class
+class FramebufferManager {
+private:
+    QualityFBO fbos[3];  // One FBO per quality level (low=0, medium=1, high=2)
+    int currentBoundQuality = -1;
 
 public:
     FramebufferManager();
-    bool initialize(int width, int height);
-    void resize(int width, int height);
-    void bind();
+    bool initialize();  // Creates all 3 FBOs with appropriate resolutions
+    void bind(int quality);  // Bind FBO for specific quality level
     void unbind();
-    GLuint getTexture() const;
+    GLuint getTexture(int quality) const;
+    int getWidth(int quality) const { return fbos[quality].width; }
+    int getHeight(int quality) const { return fbos[quality].height; }
     void cleanup();
 };
 

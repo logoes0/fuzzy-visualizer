@@ -229,51 +229,104 @@ GLuint ShaderManager::createShaderProgram(const std::string& vertexPath, const s
 }
 
 // FramebufferManager implementation
-FramebufferManager::FramebufferManager() : framebuffer(0), textureColorbuffer(0), rbo(0) {}
-
-bool FramebufferManager::initialize(int width, int height) {
-    // Create framebuffer for off-screen rendering
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    
-    // Create color attachment texture
-    glGenTextures(1, &textureColorbuffer);
-    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
-    
-    // Create renderbuffer for depth and stencil
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-    
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cerr << "Framebuffer is not complete!" << std::endl;
-        return false;
+FramebufferManager::FramebufferManager() {
+    for (int i = 0; i < 3; i++) {
+        fbos[i].framebuffer = 0;
+        fbos[i].textureColorbuffer = 0;
+        fbos[i].rbo = 0;
+        fbos[i].width = 0;
+        fbos[i].height = 0;
     }
+}
+
+bool FramebufferManager::initialize() {
+    // Pre-allocate three FBOs with different resolutions for each quality level
+    // Quality 0 (Low): 600x400 (50% resolution)
+    // Quality 1 (Medium): 900x600 (75% resolution)
+    // Quality 2 (High): 1200x800 (100% resolution)
+    int widths[] = {600, 900, 1200};
+    int heights[] = {400, 600, 800};
+    
+    for (int i = 0; i < 3; i++) {
+        fbos[i].width = widths[i];
+        fbos[i].height = heights[i];
+        
+        if (g_verbose) {
+            std::cout << "[FBO] Creating FBO for quality " << i << " (" 
+                      << fbos[i].width << "x" << fbos[i].height << ")..." << std::endl;
+        }
+        
+        // Create framebuffer
+        glGenFramebuffers(1, &fbos[i].framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbos[i].framebuffer);
+        
+        // Create color attachment texture
+        glGenTextures(1, &fbos[i].textureColorbuffer);
+        glBindTexture(GL_TEXTURE_2D, fbos[i].textureColorbuffer);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fbos[i].width, fbos[i].height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbos[i].textureColorbuffer, 0);
+        checkGLError("FBO texture creation");
+        
+        // Create renderbuffer for depth and stencil
+        glGenRenderbuffers(1, &fbos[i].rbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, fbos[i].rbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, fbos[i].width, fbos[i].height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fbos[i].rbo);
+        checkGLError("FBO renderbuffer creation");
+        
+        // Check FBO completeness
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            std::cerr << "FBO " << i << " is not complete!" << std::endl;
+            return false;
+        }
+        
+        if (g_verbose) {
+            std::cout << "[FBO] Quality " << i << " FBO created successfully" << std::endl;
+        }
+    }
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    checkGLError("FBO initialization");
+    std::cout << "[FBO] All 3 FBOs pre-allocated successfully" << std::endl;
     return true;
 }
 
-void FramebufferManager::resize(int width, int height) {
-    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+void FramebufferManager::bind(int quality) {
+    if (quality < 0 || quality > 2) {
+        std::cerr << "[FBO ERROR] Invalid quality level: " << quality << std::endl;
+        return;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, fbos[quality].framebuffer);
+    currentBoundQuality = quality;
+    if (g_verbose) {
+        checkGLError("FBO bind");
+    }
 }
 
-void FramebufferManager::bind() { glBindFramebuffer(GL_FRAMEBUFFER, framebuffer); }
-void FramebufferManager::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
-GLuint FramebufferManager::getTexture() const { return textureColorbuffer; }
+void FramebufferManager::unbind() { 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+    currentBoundQuality = -1;
+    if (g_verbose) {
+        checkGLError("FBO unbind");
+    }
+}
+
+GLuint FramebufferManager::getTexture(int quality) const { 
+    if (quality < 0 || quality > 2) {
+        std::cerr << "[FBO ERROR] Invalid quality level for getTexture: " << quality << std::endl;
+        return 0;
+    }
+    return fbos[quality].textureColorbuffer; 
+}
 
 void FramebufferManager::cleanup() {
-    glDeleteFramebuffers(1, &framebuffer);
-    glDeleteTextures(1, &textureColorbuffer);
-    glDeleteRenderbuffers(1, &rbo);
+    for (int i = 0; i < 3; i++) {
+        if (fbos[i].framebuffer) glDeleteFramebuffers(1, &fbos[i].framebuffer);
+        if (fbos[i].textureColorbuffer) glDeleteTextures(1, &fbos[i].textureColorbuffer);
+        if (fbos[i].rbo) glDeleteRenderbuffers(1, &fbos[i].rbo);
+    }
 }
 
 // CubeRenderer implementation
@@ -644,8 +697,8 @@ bool FuzzyCubeApp::initialize() {
     if (!ImGuiManager::initialize(window)) return false;
     std::cout << "[DEBUG] Initializing cube renderer..." << std::endl;
     if (!cubeRenderer.initialize()) return false;
-    std::cout << "[DEBUG] Initializing framebuffer..." << std::endl;
-    if (!framebufferManager.initialize(1200, 800)) return false;
+    std::cout << "[DEBUG] Initializing framebuffer manager (pre-allocating 3 FBOs)..." << std::endl;
+    if (!framebufferManager.initialize()) return false;
     
     // Create shader programs
     cubeSimpleProgram = ShaderManager::createShaderProgram("shaders/cube_simple.vert", "shaders/cube_simple.frag");
@@ -713,12 +766,9 @@ void FuzzyCubeApp::render() {
         std::cout << std::endl;
     }
     
-    // Resize framebuffer texture based on quality
-    framebufferManager.resize(settings.renderWidth, settings.renderHeight);
-    
-    // First pass: Render cube to framebuffer at quality-appropriate resolution
-    framebufferManager.bind();
-    glViewport(0, 0, settings.renderWidth, settings.renderHeight);
+    // First pass: Render cube to pre-allocated FBO for this quality level
+    framebufferManager.bind(quality);
+    glViewport(0, 0, framebufferManager.getWidth(quality), framebufferManager.getHeight(quality));
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -775,9 +825,9 @@ void FuzzyCubeApp::render() {
     
     glUseProgram(pixelateProgram);
     
-    // Bind the framebuffer texture
+    // Bind the framebuffer texture for the current quality level
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, framebufferManager.getTexture());
+    glBindTexture(GL_TEXTURE_2D, framebufferManager.getTexture(quality));
     glUniform1i(glGetUniformLocation(pixelateProgram, "screenTexture"), 0);
     
     // Set pixelation uniform
