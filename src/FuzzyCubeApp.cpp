@@ -860,6 +860,20 @@ bool FuzzyCubeApp::initialize() {
     std::cout << "Cube High program ID: " << cubeHighProgram << std::endl;
     std::cout << "Pixelate program ID: " << pixelateProgram << std::endl;
     
+    // Create Uniform Buffer Objects for shared data
+    glGenBuffers(1, &matricesUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
+    glBufferData(GL_UNIFORM_BUFFER, 3 * sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, matricesUBO);
+    
+    glGenBuffers(1, &lightingUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, lightingUBO);
+    glBufferData(GL_UNIFORM_BUFFER, 4 * sizeof(glm::vec4), nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, lightingUBO);
+    
+    checkGLError("UBO creation");
+    std::cout << "[UBO] Created UBOs for matrices and lighting" << std::endl;
+    
     return true;
 }
 
@@ -928,6 +942,12 @@ void FuzzyCubeApp::render() {
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
     model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
+    
+    // Update UBOs with matrices (reduces per-program uniform uploads)
+    glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(model));
+    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+    glBufferSubData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
     
     // Render cube with quality-appropriate shader and geometry
     glUseProgram(settings.cubeProgram);
@@ -1008,6 +1028,9 @@ void FuzzyCubeApp::cleanup() {
     glDeleteProgram(cubeMediumProgram);
     glDeleteProgram(cubeHighProgram);
     glDeleteProgram(pixelateProgram);
+    
+    glDeleteBuffers(1, &matricesUBO);
+    glDeleteBuffers(1, &lightingUBO);
     
     glfwTerminate();
 }

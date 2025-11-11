@@ -135,6 +135,10 @@ private:
     // Shader programs
     GLuint cubeSimpleProgram, cubeMediumProgram, cubeHighProgram, pixelateProgram;
     
+    // Uniform Buffer Objects
+    GLuint matricesUBO;  // For MVP matrices
+    GLuint lightingUBO;  // For lighting parameters
+    
     // UI state
     float fps = 60.0f, temp = 50.0f, gpuLoad = 30.0f, vramUsage = 40.0f, motionIntensity = 20.0f;
     float cameraDistance = 3.0f, rotationX = 0.0f, rotationY = 0.0f;
