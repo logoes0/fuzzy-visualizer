@@ -14,6 +14,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+// Global verbose flag for debug output
+extern bool g_verbose;
+
+// OpenGL debugging utilities
+void GLAPIENTRY glDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                                GLsizei length, const GLchar* message, const void* userParam);
+void checkGLError(const char* operation);
+
 // Forward declarations
 class CubeRenderer;
 class ShaderManager;
@@ -32,37 +40,47 @@ namespace CubeData {
 class ShaderManager {
 public:
     static std::string loadShaderSource(const std::string& filePath);
-    static GLuint compileShader(GLenum type, const std::string& source);
+    static GLuint compileShader(GLenum type, const std::string& source, const std::string& shaderName);
     static GLuint createShaderProgram(const std::string& vertexPath, const std::string& fragmentPath);
+    static GLuint reloadShaderProgram(GLuint oldProgram, const std::string& vertexPath, const std::string& fragmentPath);
+    static bool validateProgram(GLuint program, const std::string& programName);
+};
+
+// Structure to hold FBO resources for a single quality level
+struct QualityFBO {
+    GLuint framebuffer;
+    GLuint textureColorbuffer;
+    GLuint rbo;
+    int width, height;
 };
 
 // Framebuffer management class
 class FramebufferManager {
 private:
-    GLuint framebuffer;
-    GLuint textureColorbuffer;
-    GLuint rbo;
+    QualityFBO fbos[3];  // One FBO per quality level (low=0, medium=1, high=2)
+    int currentBoundQuality = -1;
 
 public:
     FramebufferManager();
-    bool initialize(int width, int height);
-    void resize(int width, int height);
-    void bind();
+    bool initialize();  // Creates all 3 FBOs with appropriate resolutions
+    void bind(int quality);  // Bind FBO for specific quality level
     void unbind();
-    GLuint getTexture() const;
+    GLuint getTexture(int quality) const;
+    int getWidth(int quality) const { return fbos[quality].width; }
+    int getHeight(int quality) const { return fbos[quality].height; }
     void cleanup();
 };
 
 // Cube renderer class
 class CubeRenderer {
 private:
-    GLuint cubeVAO, cubeVBO;
-    GLuint simpleCubeVAO, simpleCubeVBO;
-    GLuint quadVAO, quadVBO;
+    GLuint cubeVAO, cubeVBO, cubeEBO;  // Full cube with indexed geometry
+    GLuint simpleCubeVAO, simpleCubeVBO;  // Simple cube (no indexing for low quality)
+    GLuint quadVAO, quadVBO;  // Screen quad for post-processing
 
 public:
     bool initialize();
-    void renderCube(GLuint program, int triangleCount);
+    void renderCube(GLuint program, int indexCount);
     void renderSimpleCube(GLuint program);
     void renderScreenQuad();
     void cleanup();
@@ -85,6 +103,8 @@ class PythonManager {
 private:
     PyObject* pModule;
     PyObject* pFunc;
+    PyObject* pSimClass;  // ControlSystemSimulation class
+    PyObject* pSim;       // Cached simulation object
 
 public:
     bool initialize();
@@ -97,7 +117,7 @@ struct QualitySettings {
     int renderWidth, renderHeight;
     GLuint cubeProgram;
     GLuint cubeVAO;
-    int triangleCount;
+    int indexCount;  // Number of indices to draw (for indexed geometry) or vertex count
     float pixelSize;
     
     static QualitySettings getSettings(int quality, GLuint simpleProgram, GLuint mediumProgram, 
@@ -117,12 +137,21 @@ private:
     // Shader programs
     GLuint cubeSimpleProgram, cubeMediumProgram, cubeHighProgram, pixelateProgram;
     
+    // Uniform Buffer Objects
+    GLuint matricesUBO;  // For MVP matrices
+    GLuint lightingUBO;  // For lighting parameters
+    
+    // GPU profiling
+    GLuint queryIDs[2];  // Timer queries for GPU profiling
+    bool enableGPUTimers = false;
+    
     // UI state
     float fps = 60.0f, temp = 50.0f, gpuLoad = 30.0f, vramUsage = 40.0f, motionIntensity = 20.0f;
     float cameraDistance = 3.0f, rotationX = 0.0f, rotationY = 0.0f;
     
     // Manual override state
     int manualQuality = -1; // -1 means use fuzzy logic
+    bool msaaEnabled = false;  // MSAA toggle
 
 public:
     bool initialize();

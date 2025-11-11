@@ -214,6 +214,8 @@ rules = [
 # --------------------------------------------------------------------------
 
 system = ctrl.ControlSystem(rules)
+# Create simulation object once and reuse (cached for performance)
+_cached_sim = ctrl.ControlSystemSimulation(system)
 
 # --------------------------------------------------------------------------
 # MAIN COMPUTATION FUNCTION (Called from C++)
@@ -235,9 +237,10 @@ def compute_quality(fps, temp, gpu_load, vram_usage, motion_intensity):
         int: Quality level (0 = Low, 1 = Medium, 2 = High)
     
     This function is called by the C++ application via Python's C API.
+    Uses cached simulation object to avoid recreation overhead.
     """
-    # Create simulation instance
-    sim = ctrl.ControlSystemSimulation(system)
+    # Use cached simulation object (resets inputs automatically)
+    sim = _cached_sim
     
     # Set input values
     sim.input['fps'] = float(fps)
