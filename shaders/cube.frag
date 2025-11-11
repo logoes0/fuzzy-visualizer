@@ -12,8 +12,8 @@ out vec4 FragColor;
 
 void main()
 {
-    // Use monochrome blue instead of vertex colors
-    vec3 baseColor = vec3(0.2, 0.4, 0.8); // Blue color
+    // Use vertex color as base (distinct per face)
+    vec3 baseColor = Color;
     
     // Ambient lighting
     float ambientStrength = 0.3;
