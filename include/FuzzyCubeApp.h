@@ -147,6 +147,7 @@ private:
     
     // Manual override state
     int manualQuality = -1; // -1 means use fuzzy logic
+    bool msaaEnabled = false;  // MSAA toggle
 
 public:
     bool initialize();

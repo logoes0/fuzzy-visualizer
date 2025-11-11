@@ -791,6 +791,7 @@ bool FuzzyCubeApp::initialize() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);  // Request 4x MSAA
     
     // Create window
     std::cout << "[DEBUG] Creating window..." << std::endl;
@@ -833,6 +834,7 @@ bool FuzzyCubeApp::initialize() {
     
     // Configure OpenGL
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);  // Enable MSAA (can be toggled at runtime)
     glViewport(0, 0, 1200, 800);
     
     // Initialize components
@@ -878,15 +880,30 @@ bool FuzzyCubeApp::initialize() {
 }
 
 void FuzzyCubeApp::handleInput() {
+    static bool mKeyWasPressed = false;
+    
     // Manual quality override with keyboard input (1=low, 2=medium, 3=high)
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-        manualQuality = 0; // Low quality
+        manualQuality = 0;
     } else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-        manualQuality = 1; // Medium quality
+        manualQuality = 1;
     } else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-        manualQuality = 2; // High quality
+        manualQuality = 2;
     } else if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
-        manualQuality = -1; // Reset to automatic fuzzy logic
+        manualQuality = -1;
+    }
+    
+    // Toggle MSAA with M key
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
+        if (!mKeyWasPressed) {
+            msaaEnabled = !msaaEnabled;
+            if (msaaEnabled) glEnable(GL_MULTISAMPLE);
+            else glDisable(GL_MULTISAMPLE);
+            std::cout << "[MSAA] " << (msaaEnabled ? "Enabled" : "Disabled") << std::endl;
+            mKeyWasPressed = true;
+        }
+    } else {
+        mKeyWasPressed = false;
     }
 }
 
