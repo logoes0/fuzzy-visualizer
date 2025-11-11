@@ -5,7 +5,7 @@ out vec4 FragColor;
 
 void main()
 {
-    // Simple flat shading - no lighting calculations
-    vec3 baseColor = vec3(0.2, 0.4, 0.8); // Blue color
-    FragColor = vec4(baseColor * 0.8, 1.0); // Slightly darker for low quality
+    // Use vertex colors to distinguish faces (no lighting, but color variation)
+    // This makes the cube structure visible without smooth shading
+    FragColor = vec4(Color * 0.7, 1.0); // Use vertex colors, slightly dimmed
 }
