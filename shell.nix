@@ -31,6 +31,11 @@ pkgs.mkShell {
     
     # Build tool for pkg-config
     pkg-config
+    
+    # System libraries needed by Python packages (numpy, pandas, etc.)
+    zlib
+    bzip2
+    xz
   ];
   
   # Set up environment variables for OpenGL and graphics libraries
@@ -87,8 +92,8 @@ pkgs.mkShell {
     echo "  scikit-image: $(python -c 'import skimage; print("available")' 2>/dev/null || echo 'not installed')"
     echo ""
     
-    # Set library paths for dynamic linking
-    export LD_LIBRARY_PATH="${pkgs.libGL}/lib:${pkgs.mesa}/lib:${pkgs.glfw}/lib:$LD_LIBRARY_PATH"
+    # Set library paths for dynamic linking (including system libraries for Python packages)
+    export LD_LIBRARY_PATH="${pkgs.libGL}/lib:${pkgs.mesa}/lib:${pkgs.glfw}/lib:${pkgs.zlib}/lib:${pkgs.bzip2}/lib:${pkgs.xz}/lib:${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
     
     # Ensure Python from venv is used
     export PATH="$PWD/.venv/bin:$PATH"

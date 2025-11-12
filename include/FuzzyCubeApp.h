@@ -3,8 +3,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 #include <Python.h>
 #include <iostream>
 #include <fstream>
@@ -19,7 +19,7 @@ extern bool g_verbose;
 
 // OpenGL debugging utilities
 void GLAPIENTRY glDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
-                                GLsizei length, const GLchar* message, const void* userParam);
+    GLsizei length, const GLchar* message, const void* userParam);
 void checkGLError(const char* operation);
 
 // Forward declarations
@@ -31,9 +31,9 @@ class PythonManager;
 
 // Cube vertex data namespace
 namespace CubeData {
-    extern float simpleCubeVertices[];
-    extern float cubeVertices[];
-    extern float screenQuadVertices[];
+    extern float simpleCubeVertices [];
+    extern float cubeVertices [];
+    extern float screenQuadVertices [];
 }
 
 // Shader management class
@@ -93,8 +93,8 @@ class ImGuiManager {
 public:
     static bool initialize(GLFWwindow* window);
     static void renderUI(float& cpuLoad, float& temp, float& gpuLoad, float& vramUsage,
-                        float& cameraDistance, float& rotationX, float& rotationY, 
-                        int quality, bool isManualOverride);
+        float& cameraDistance, float& rotationX, float& rotationY,
+        int quality, bool isManualOverride);
     static void shutdown();
 };
 
@@ -119,9 +119,9 @@ struct QualitySettings {
     GLuint cubeVAO;
     int indexCount;  // Number of indices to draw (for indexed geometry) or vertex count
     float pixelSize;
-    
-    static QualitySettings getSettings(int quality, GLuint simpleProgram, GLuint mediumProgram, 
-                                     GLuint highProgram, GLuint simpleVAO, GLuint fullVAO);
+
+    static QualitySettings getSettings(int quality, GLuint simpleProgram, GLuint mediumProgram,
+        GLuint highProgram, GLuint simpleVAO, GLuint fullVAO);
 };
 
 // Main application class
@@ -133,22 +133,22 @@ private:
     CubeRenderer cubeRenderer;
     ImGuiManager imguiManager;
     PythonManager pythonManager;
-    
+
     // Shader programs
     GLuint cubeSimpleProgram, cubeMediumProgram, cubeHighProgram, pixelateProgram;
-    
+
     // Uniform Buffer Objects
     GLuint matricesUBO;  // For MVP matrices
     GLuint lightingUBO;  // For lighting parameters
-    
+
     // GPU profiling
     GLuint queryIDs[2];  // Timer queries for GPU profiling
     bool enableGPUTimers = false;
-    
+
     // UI state (defaults based on CSV data medians)
     float cpuLoad = 56.0f, temp = 64.0f, gpuLoad = 3.0f, vramUsage = 6.0f;
     float cameraDistance = 3.0f, rotationX = 0.0f, rotationY = 0.0f;
-    
+
     // Manual override state
     int manualQuality = -1; // -1 means use fuzzy logic
     bool msaaEnabled = false;  // MSAA toggle
